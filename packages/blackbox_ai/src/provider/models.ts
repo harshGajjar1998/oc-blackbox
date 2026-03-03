@@ -256,6 +256,20 @@ const BLACKBOX_AI_PROVIDER = {
       options: {},
     },
     // ── Blackbox AI native models ──────────────────────────────────────────
+    "blackboxai/blackbox-pro-plus": {
+      id: "blackboxai/blackbox-pro-plus",
+      name: "Blackbox Pro Plus",
+      family: "blackbox",
+      release_date: "2024-01-01",
+      attachment: true,
+      reasoning: true,
+      temperature: true,
+      tool_call: true,
+      cost: { input: 0.0, output: 0.0 },
+      limit: { context: 200000, output: 65536 },
+      modalities: { input: ["text", "image"], output: ["text"] },
+      options: {},
+    },
     "blackboxai/blackbox-pro": {
       id: "blackboxai/blackbox-pro",
       name: "Blackbox Pro",

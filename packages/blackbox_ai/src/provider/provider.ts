@@ -362,8 +362,19 @@ export namespace Provider {
       const config = await Config.get()
       // Allow enterprise deployments to override the base URL
       const enterpriseURL = config.enterprise?.url
+
+      // Without an API key, only expose free models (cost.input === 0).
+      // This mirrors the opencode provider behaviour so Blackbox AI is always
+      // visible as the default provider even before the user authenticates.
+      if (!apiKey) {
+        for (const [key, value] of Object.entries(input.models)) {
+          if ((value as any).cost?.input === 0) continue
+          delete input.models[key]
+        }
+      }
+
       return {
-        autoload: !!apiKey,
+        autoload: Object.keys(input.models).length > 0,
         options: {
           apiKey: apiKey || "public",
           ...(enterpriseURL ? { baseURL: enterpriseURL } : {}),
@@ -1289,7 +1300,9 @@ export namespace Provider {
     return undefined
   }
 
-  const priority = ["gpt-5", "claude-sonnet-4", "big-pickle", "gemini-3-pro"]
+  // Priority list: LAST entry wins (highest index = highest priority with "desc" sort).
+  // Blackbox AI native models are placed at the end so they rank first.
+  const priority = ["gpt-5", "claude-sonnet-4", "big-pickle", "gemini-3-pro", "blackbox-pro", "blackbox-pro-plus"]
   export function sort(models: Model[]) {
     return sortBy(
       models,
@@ -1314,6 +1327,13 @@ export namespace Provider {
       if (!provider) continue
       if (!provider.models[entry.modelID]) continue
       return { providerID: entry.providerID, modelID: entry.modelID }
+    }
+
+    // Always prefer blackbox-ai as the default provider when available.
+    const blackboxProvider = providers["blackbox-ai"]
+    if (blackboxProvider && Object.keys(blackboxProvider.models).length > 0) {
+      const [model] = sort(Object.values(blackboxProvider.models))
+      if (model) return { providerID: "blackbox-ai", modelID: model.id }
     }
 
     const provider = Object.values(providers).find((p) => !cfg.provider || Object.keys(cfg.provider).includes(p.id))
