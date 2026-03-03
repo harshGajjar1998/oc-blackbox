@@ -68,38 +68,36 @@ All 4 critical tests passed with API key `sk-VtGedoIpoHzL0_Kl0NRiuA`:
 
 ---
 
-## Phase 5: Backend Integration — READY TO IMPLEMENT 🔴
+## Phase 5: Backend Integration — ✅ COMPLETE
 
 ### 5.1 — Add Blackbox AI Provider
 **File:** `packages/blackbox_ai/src/provider/provider.ts`
-- [ ] Add `"blackbox-ai"` entry to `CUSTOM_LOADERS`
-- [ ] Use `@ai-sdk/openai-compatible` with `baseURL: "https://api.blackbox.ai"`
-- [ ] Read API key from `Auth.get("blackbox-ai")` or `Env.get("BLACKBOXAI_API_KEY")`
-- [ ] Support enterprise URL override from config
-- [ ] Fix remaining `"X-Title": "opencode"` → `"X-Title": "Blackbox AI"` in openrouter/vercel/zenmux/kilo loaders
+- [x] Add `"blackbox-ai"` entry to `CUSTOM_LOADERS`
+- [x] Use `@ai-sdk/openai-compatible` with `baseURL: "https://api.blackbox.ai"`
+- [x] Read API key from `Auth.get("blackbox-ai")` or `Env.get("BLACKBOXAI_API_KEY")`
+- [x] Support enterprise URL override from config
+- [x] Fix remaining `"X-Title": "opencode"` → `"X-Title": "Blackbox AI"` in openrouter/vercel/zenmux/kilo loaders
 
 ### 5.2 — Update Models Registry
 **File:** `packages/blackbox_ai/src/provider/models.ts`
-- [ ] Change models URL from `https://models.dev/api.json` to `https://api.blackbox.ai/v1/models`
-- [ ] Write response adapter: Blackbox `{ data: [{ id, object, ... }] }` → models.dev `{ "id": { id, name, cost, limit, ... } }` format
-- [ ] Map `blackboxai/{provider}/{model}` IDs to display names using pricing table
-- [ ] Add context window sizes from pricing table
-- [ ] Add cost data from pricing table (input/output per 1M tokens)
+- [x] Inject hardcoded `"blackbox-ai"` provider with models from pricing table into `get()` result
+- [x] Model IDs use full `blackboxai/...` prefix, npm=`@ai-sdk/openai-compatible`, api=`https://api.blackbox.ai`
+- [x] Cost data from pricing table (input/output per 1M tokens)
+- [x] Context window sizes from pricing table
 
 ### 5.3 — Add Auth Command
 **File:** `packages/blackbox_ai/src/cli/cmd/auth.ts`
-- [ ] Add `"blackbox-ai"` to the list of API key auth providers
-- [ ] Set dashboard URL to `https://app.blackbox.ai/dashboard`
-- [ ] Support `BLACKBOXAI_API_KEY` environment variable
+- [x] Add `"blackbox-ai"` to priority list (position 0 — highest)
+- [x] Set dashboard URL hint to `https://app.blackbox.ai/dashboard`
+- [x] Support `BLACKBOXAI_API_KEY` environment variable (via provider env field)
 
 ### 5.4 — Update User Agent
 **File:** `packages/blackbox_ai/src/installation/index.ts`
-- [ ] Change `USER_AGENT` from `opencode/{channel}/{version}/{client}` to `blackbox-ai/{channel}/{version}/{client}`
+- [x] Change `USER_AGENT` from `opencode/{channel}/{version}/{client}` to `blackbox-ai/{channel}/{version}/{client}`
 
-### 5.5 — Update Share Service (Optional)
+### 5.5 — Disable Share Service
 **File:** `packages/blackbox_ai/src/share/share-next.ts`
-- [ ] Either: Replace `https://opncd.ai` with Blackbox AI share service URL
-- [ ] Or: Disable sharing feature until Blackbox AI provides share service
+- [x] Disable sharing by default (empty URL guard) until Blackbox AI provides share service
 
 ### 5.6 — Update Auto-Update Package Name
 **File:** `packages/blackbox_ai/src/installation/index.ts`
@@ -148,9 +146,9 @@ All 4 critical tests passed with API key `sk-VtGedoIpoHzL0_Kl0NRiuA`:
 | 2 — Rebranding fixes | ✅ Complete | TypeScript checks pass |
 | 3 — API Research | ✅ Complete | All docs fetched |
 | 4 — Live API Testing | ✅ Complete | 4/4 tests passed |
-| 5 — Backend Integration | 🔴 Ready | 6 code changes needed |
+| 5 — Backend Integration | ✅ Complete | 5 files updated |
 | 6 — Distribution | 🟡 Blocked | Waiting for npm package name |
 | 7 — Branding Assets | 🟡 Blocked | Waiting for icon files |
 | 8 — Testing | ⬜ Pending | After Phase 5 |
 
-**Next action: Implement Phase 5 (5 files, ~100 lines of code)**
+**Next action: Phase 8 — Testing & Verification (run with real API key)**

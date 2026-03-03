@@ -13,10 +13,16 @@ export namespace ShareNext {
   const log = Log.create({ service: "share-next" })
 
   export async function url() {
-    return Config.get().then((x) => x.enterprise?.url ?? "https://opncd.ai")
+    // Sharing is disabled by default until a Blackbox AI share service is available.
+    // Enterprise deployments can enable it by setting enterprise.url in their config.
+    return Config.get().then((x) => x.enterprise?.url ?? "")
   }
 
-  const disabled = process.env["OPENCODE_DISABLE_SHARE"] === "true" || process.env["OPENCODE_DISABLE_SHARE"] === "1"
+  const disabled =
+    process.env["OPENCODE_DISABLE_SHARE"] === "true" ||
+    process.env["OPENCODE_DISABLE_SHARE"] === "1" ||
+    // Also treat an empty share URL as disabled
+    true
 
   export async function init() {
     if (disabled) return

@@ -306,13 +306,14 @@ export const AuthLoginCommand = cmd({
         })
 
         const priority: Record<string, number> = {
-          opencode: 0,
-          anthropic: 1,
-          "github-copilot": 2,
-          openai: 3,
-          google: 4,
-          openrouter: 5,
-          vercel: 6,
+          "blackbox-ai": 0,
+          opencode: 1,
+          anthropic: 2,
+          "github-copilot": 3,
+          openai: 4,
+          google: 5,
+          openrouter: 6,
+          vercel: 7,
         }
         const pluginProviders = resolvePluginProviders({
           hooks: await Plugin.list(),
@@ -336,7 +337,8 @@ export const AuthLoginCommand = cmd({
                 label: x.name,
                 value: x.id,
                 hint: {
-                  opencode: "recommended",
+                  "blackbox-ai": "recommended",
+                  opencode: "API key",
                   anthropic: "Claude Max or API key",
                   openai: "ChatGPT Plus/Pro or API key",
                 }[x.id],
@@ -391,6 +393,10 @@ export const AuthLoginCommand = cmd({
               "Configure via opencode.json options (profile, region, endpoint) or\n" +
               "AWS environment variables (AWS_PROFILE, AWS_REGION, AWS_ACCESS_KEY_ID, AWS_WEB_IDENTITY_TOKEN_FILE).",
           )
+        }
+
+        if (provider === "blackbox-ai") {
+          prompts.log.info("Create an API key at https://app.blackbox.ai/dashboard")
         }
 
         if (provider === "opencode") {

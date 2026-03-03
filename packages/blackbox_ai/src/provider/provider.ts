@@ -356,13 +356,27 @@ export namespace Provider {
         },
       }
     },
+    "blackbox-ai": async (input) => {
+      const auth = await Auth.get("blackbox-ai")
+      const apiKey = (auth?.type === "api" ? auth.key : undefined) ?? Env.get("BLACKBOXAI_API_KEY")
+      const config = await Config.get()
+      // Allow enterprise deployments to override the base URL
+      const enterpriseURL = config.enterprise?.url
+      return {
+        autoload: !!apiKey,
+        options: {
+          apiKey: apiKey || "public",
+          ...(enterpriseURL ? { baseURL: enterpriseURL } : {}),
+        },
+      }
+    },
     openrouter: async () => {
       return {
         autoload: false,
         options: {
           headers: {
             "HTTP-Referer": "https://www.blackbox.ai/",
-            "X-Title": "opencode",
+            "X-Title": "Blackbox AI",
           },
         },
       }
@@ -373,7 +387,7 @@ export namespace Provider {
         options: {
           headers: {
             "http-referer": "https://www.blackbox.ai/",
-            "x-title": "opencode",
+            "x-title": "Blackbox AI",
           },
         },
       }
@@ -459,7 +473,7 @@ export namespace Provider {
         options: {
           headers: {
             "HTTP-Referer": "https://www.blackbox.ai/",
-            "X-Title": "opencode",
+            "X-Title": "Blackbox AI",
           },
         },
       }
@@ -583,7 +597,7 @@ export namespace Provider {
         options: {
           headers: {
             "HTTP-Referer": "https://www.blackbox.ai/",
-            "X-Title": "opencode",
+            "X-Title": "Blackbox AI",
           },
         },
       }
