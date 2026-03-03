@@ -2,7 +2,12 @@ import { ComponentProps } from "solid-js"
 
 export const Mark = (props: { class?: string }) => {
   return (
-    <svg xmlns="http://www.w3.org/2000/svg" classList={{ [props.class ?? ""]: !!props.class }} viewBox="0 0 350 400" fill="none">
+    <svg 
+      xmlns="http://www.w3.org/2000/svg" 
+      classList={{ [props.class ?? ""]: !!props.class }} 
+      viewBox="0 0 350 400" 
+      fill="none"
+    >
       <path d="M71.4799 283.646V340.856L174.983 400L350 300.004V242.795L175 342.808L71.4799 283.646Z" fill="var(--icon-strong-base)" />
       <path d="M299.95 128.583V246.889L350 218.284V99.9957L174.983 0L124.95 28.5875L299.95 128.583Z" fill="var(--icon-strong-base)" />
       <path d="M0 99.9957V300.004L50.0499 328.609V128.583L153.553 69.4218L103.52 40.8343L0 99.9957Z" fill="var(--icon-strong-base)" />
@@ -29,9 +34,12 @@ export const Splash = (props: Pick<ComponentProps<"svg">, "ref" | "class">) => {
 
 export const Logo = (props: { class?: string }) => {
   return (
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 86"
+    <svg 
+      xmlns="http://www.w3.org/2000/svg" 
+      viewBox="0 0 512 86"
       fill="none"
-      classList={{ [props.class ?? ""]: !!props.class }}>
+      classList={{ [props.class ?? ""]: !!props.class }}
+    >
       <g clip-path="url(#clip0_2_4549)">
         <path d="M83.53 14.25H114.4L121.43 21.28V35.06L118.62 37.94L123.61 43V55.87L116.02 63.46H83.53V14.25ZM109.48 34.86L112.01 32.33V24.74L109.55 22.28H92.88V34.87H109.48V34.86ZM111.17 55.46L114.19 52.44V45.55L111.17 42.53H92.89V55.47H111.17V55.46Z" fill="var(--icon-strong-base)" />
         <path d="M127.83 14.25H137.39V55.39H162V63.48H127.82V14.25H127.83Z" fill="var(--icon-strong-base)" />

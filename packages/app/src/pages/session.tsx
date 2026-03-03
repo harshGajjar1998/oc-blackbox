@@ -475,7 +475,7 @@ export default function Page() {
 
   const emptyTurn = () => (
     <div class="h-full pb-30 flex flex-col items-center justify-center text-center gap-6">
-      <Mark class="w-14 opacity-10" />
+      <Mark class="w-14" />
       <div class="text-14-regular text-text-weak max-w-56">{language.t("session.review.noChanges")}</div>
     </div>
   )
@@ -536,7 +536,7 @@ export default function Page() {
               emptyTurn()
             ) : (
               <div class={input.emptyClass}>
-                <Mark class="w-14 opacity-10" />
+                <Mark class="w-14" />
                 <div class="text-14-regular text-text-weak max-w-56">{language.t(reviewEmptyKey())}</div>
               </div>
             )

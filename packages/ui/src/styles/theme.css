@@ -343,6 +343,7 @@
   --avatar-text-purple: #8445bc;
   --avatar-text-cyan: #0894b3;
   --avatar-text-lime: #5d770d;
+  --logo-fill: #000000;
 
   @media (prefers-color-scheme: dark) {
     color-scheme: dark;
@@ -602,5 +603,6 @@
     --avatar-text-purple: #9d5bd2;
     --avatar-text-cyan: #369eff;
     --avatar-text-lime: #c4f042;
+    --logo-fill: #ffffff;
   }
 }
