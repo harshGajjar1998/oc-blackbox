@@ -90,6 +90,7 @@ export const dict = {
   "dialog.provider.group.popular": "Popular",
   "dialog.provider.group.other": "Outro",
   "dialog.provider.tag.recommended": "Recomendado",
+  "dialog.provider.blackbox.note": "Modelos selecionados incluindo Claude, GPT, Gemini e mais",
   "dialog.provider.opencode.note": "Modelos selecionados incluindo Claude, GPT, Gemini e mais",
   "dialog.provider.anthropic.note": "Conectar com Claude Pro/Max ou chave de API",
   "dialog.provider.copilot.note": "Conectar com Copilot ou chave de API",

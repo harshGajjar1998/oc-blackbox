@@ -102,6 +102,7 @@ export const dict = {
   "dialog.provider.group.popular": "熱門",
   "dialog.provider.group.other": "其他",
   "dialog.provider.tag.recommended": "推薦",
+  "dialog.provider.blackbox.note": "????,?? Claude?GPT?Gemini ??",
   "dialog.provider.opencode.note": "精選模型，包含 Claude、GPT、Gemini 等等",
   "dialog.provider.anthropic.note": "使用 Claude Pro/Max 或 API 金鑰連線",
   "dialog.provider.openai.note": "使用 ChatGPT Pro/Plus 或 API 金鑰連線",

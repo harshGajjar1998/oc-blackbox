@@ -90,6 +90,7 @@ export const dict = {
   "dialog.provider.group.popular": "人気",
   "dialog.provider.group.other": "その他",
   "dialog.provider.tag.recommended": "推奨",
+  "dialog.provider.blackbox.note": "Claude, GPT, Gemini?????????????",
   "dialog.provider.opencode.note": "Claude, GPT, Geminiなどを含む厳選されたモデル",
   "dialog.provider.anthropic.note": "Claude Pro/MaxまたはAPIキーで接続",
   "dialog.provider.copilot.note": "CopilotまたはAPIキーで接続",

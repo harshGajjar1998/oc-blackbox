@@ -3,7 +3,7 @@ import { decode64 } from "@/utils/base64"
 import { useParams } from "@solidjs/router"
 import { createMemo } from "solid-js"
 
-export const popularProviders = ["opencode", "anthropic", "github-copilot", "openai", "google", "openrouter", "vercel"]
+export const popularProviders = ["blackbox-ai", "opencode", "anthropic", "github-copilot", "openai", "google", "openrouter", "vercel"]
 const popularProviderSet = new Set(popularProviders)
 
 export function useProviders() {
@@ -20,7 +20,13 @@ export function useProviders() {
   const connectedIDs = createMemo(() => new Set(providers().connected))
   const connected = createMemo(() => providers().all.filter((p) => connectedIDs().has(p.id)))
   const paid = createMemo(() =>
-    connected().filter((p) => p.id !== "opencode" || Object.values(p.models).find((m) => m.cost?.input)),
+    connected().filter((p) => {
+      // Hide opencode/blackbox-ai from "paid" list if they only have free models
+      if (p.id === "opencode" || p.id === "blackbox-ai") {
+        return !!Object.values(p.models).find((m) => m.cost?.input)
+      }
+      return true
+    }),
   )
   const popular = createMemo(() => providers().all.filter((p) => popularProviderSet.has(p.id)))
   return {

@@ -94,6 +94,7 @@ export const dict = {
   "dialog.provider.group.popular": "인기",
   "dialog.provider.group.other": "기타",
   "dialog.provider.tag.recommended": "추천",
+  "dialog.provider.blackbox.note": "Claude, GPT, Gemini ?? ??? ??? ??",
   "dialog.provider.opencode.note": "Claude, GPT, Gemini 등을 포함한 엄선된 모델",
   "dialog.provider.anthropic.note": "Claude Pro/Max 또는 API 키로 연결",
   "dialog.provider.copilot.note": "Copilot 또는 API 키로 연결",

@@ -125,6 +125,7 @@ export const dict = {
   "dialog.provider.group.popular": "热门",
   "dialog.provider.group.other": "其他",
   "dialog.provider.tag.recommended": "推荐",
+  "dialog.provider.blackbox.note": "????,?? Claude?GPT?Gemini ?",
   "dialog.provider.opencode.note": "使用 Blackbox AI Zen 或 API 密钥连接",
   "dialog.provider.anthropic.note": "使用 Claude Pro/Max 或 API 密钥连接",
   "dialog.provider.copilot.note": "使用 Copilot 或 API 密钥连接",
