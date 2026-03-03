@@ -255,7 +255,38 @@ const BLACKBOX_AI_PROVIDER = {
       modalities: { input: ["text"], output: ["text"] },
       options: {},
     },
-    // ── Blackbox AI native models ──────────────────────────────────────────
+    // ── Free models on Blackbox AI ─────────────────────────────────────────
+    // These two models are available without an API key / subscription.
+    "blackboxai/moonshot/kimi-k2.5": {
+      id: "blackboxai/moonshot/kimi-k2.5",
+      name: "Kimi K2.5 (Free)",
+      family: "kimi",
+      release_date: "2025-01-01",
+      attachment: false,
+      reasoning: true,
+      temperature: true,
+      tool_call: true,
+      cost: { input: 0.0, output: 0.0 },
+      limit: { context: 128000, output: 32768 },
+      modalities: { input: ["text"], output: ["text"] },
+      options: {},
+    },
+    "blackboxai/minimax/minimax-m2.5": {
+      id: "blackboxai/minimax/minimax-m2.5",
+      name: "MiniMax M2.5 (Free)",
+      family: "minimax",
+      release_date: "2025-01-01",
+      attachment: false,
+      reasoning: false,
+      temperature: true,
+      tool_call: true,
+      cost: { input: 0.0, output: 0.0 },
+      limit: { context: 1000000, output: 32768 },
+      modalities: { input: ["text"], output: ["text"] },
+      options: {},
+    },
+    // ── Blackbox AI premium/subscription models ────────────────────────────
+    // These require a Blackbox AI Pro or Pro Plus subscription (BLACKBOXAI_API_KEY).
     "blackboxai/blackbox-pro-plus": {
       id: "blackboxai/blackbox-pro-plus",
       name: "Blackbox Pro Plus",
@@ -265,7 +296,7 @@ const BLACKBOX_AI_PROVIDER = {
       reasoning: true,
       temperature: true,
       tool_call: true,
-      cost: { input: 0.0, output: 0.0 },
+      cost: { input: 1.0, output: 3.0 },
       limit: { context: 200000, output: 65536 },
       modalities: { input: ["text", "image"], output: ["text"] },
       options: {},
@@ -279,7 +310,7 @@ const BLACKBOX_AI_PROVIDER = {
       reasoning: false,
       temperature: true,
       tool_call: true,
-      cost: { input: 0.0, output: 0.0 },
+      cost: { input: 0.5, output: 1.5 },
       limit: { context: 128000, output: 32768 },
       modalities: { input: ["text"], output: ["text"] },
       options: {},
