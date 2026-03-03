@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>BLACKBOX AI — Full UI Logo Test</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #111; }
+
+  /* CSS variables matching the app's dark theme */
+  :root {
+    --background-base: #111111;
+    --background-weak: #1a1a1a;
+    --surface-weak: #222222;
+    --icon-strong-base: #FBFBFB;
+    --icon-base: #888888;
+    --icon-warning-base: #F59E0B;
+    --text-strong: #F5F5F5;
+    --text-weak: #888888;
+    --border-weak-base: #2a2a2a;
+  }
+
+  .light-theme {
+    --background-base: #F5F5F5;
+    --background-weak: #EBEBEB;
+    --surface-weak: #E0E0E0;
+    --icon-strong-base: #0D0D0D;
+    --icon-base: #555555;
+    --icon-warning-base: #D97706;
+    --text-strong: #111111;
+    --text-weak: #555555;
+    --border-weak-base: #CCCCCC;
+  }
+
+  /* Section labels */
+  .label {
+    color: #555;
+    font-size: 11px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    padding: 12px 20px 8px;
+    background: #0a0a0a;
+    border-bottom: 1px solid #1a1a1a;
+  }
+
+  /* ===== LOADING SCREEN SIMULATION ===== */
+  .loading-screen {
+    background: var(--background-base);
+    width: 100%;
+    height: 400px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .loading-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 44px;
+  }
+
+  .splash-icon {
+    opacity: 0.15;
+  }
+
+  .loading-text-area {
+    width: 240px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .loading-status {
+    color: var(--text-strong);
+    font-size: 14px;
+    text-align: center;
+  }
+
+  .progress-track {
+    width: 80px;
+    height: 4px;
+    background: var(--surface-weak);
+    border-radius: 0;
+    overflow: hidden;
+  }
+
+  .progress-fill {
+    height: 100%;
+    width: 45%;
+    background: var(--icon-warning-base);
+    border-radius: 0;
+  }
+
+  /* ===== HOME PAGE SIMULATION ===== */
+  .home-screen {
+    background: var(--background-base);
+    width: 100%;
+    height: 500px;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    padding-top: 55px;
+  }
+
+  .home-content {
+    width: 100%;
+    max-width: 480px;
+    padding: 0 16px;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .home-logo {
+    opacity: 0.12;
+    width: 100%;
+    max-width: 480px;
+  }
+
+  .server-btn {
+    margin-top: 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 12px;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    color: var(--text-weak);
+    font-size: 14px;
+    align-self: center;
+  }
+
+  .server-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #22C55E;
+  }
+
+  .recent-projects {
+    margin-top: 80px;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .recent-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 12px;
+  }
+
+  .recent-title {
+    color: var(--text-strong);
+    font-size: 14px;
+    font-weight: 500;
+  }
+
+  .project-item {
+    padding: 12px;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    color: var(--text-strong);
+    font-size: 13px;
+    font-family: monospace;
+    text-align: left;
+    display: flex;
+    justify-content: space-between;
+    border-radius: 6px;
+  }
+
+  .project-item:hover { background: var(--surface-weak); }
+
+  .project-time {
+    color: var(--text-weak);
+    font-size: 13px;
+    font-family: -apple-system, sans-serif;
+  }
+
+  /* Divider */
+  .divider {
+    height: 1px;
+    background: #1a1a1a;
+  }
+</style>
+</head>
+<body>
+
+<!-- LOADING SCREEN — DARK THEME -->
+<div class="label">① Loading Screen — Dark Theme (Splash component, opacity 15%)</div>
+<div class="loading-screen">
+  <div class="loading-content">
+    <!-- Splash SVG (geometric mark) -->
+    <svg class="splash-icon" xmlns="http://www.w3.org/2000/svg" viewBox="195.596 226.188 274.408 312.94" fill="none" width="80" height="100">
+      <path d="M271.304 260.638L195.596 304.431V460.885L236.854 484.751V328.418L312.043 284.911L271.304 260.638Z" fill="var(--icon-strong-base)"/>
+      <path d="M330.831 226.188L290.274 249.657L331.055 273.899L348.437 284.249L427.972 331.584V413.744L470.004 389.431V309L330.831 226.188Z" fill="var(--icon-strong-base)"/>
+      <path d="M331.054 491.865L255.977 448.428V495.803L330.83 539.128L470.003 458.606V411.587L414.446 443.645L331.054 491.865Z" fill="var(--icon-strong-base)"/>
+    </svg>
+    <div class="loading-text-area">
+      <span class="loading-status">Just a moment...</span>
+      <div class="progress-track">
+        <div class="progress-fill"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="divider"></div>
+
+<!-- LOADING SCREEN — LIGHT THEME -->
+<div class="label">② Loading Screen — Light Theme</div>
+<div class="loading-screen light-theme">
+  <div class="loading-content">
+    <svg class="splash-icon" xmlns="http://www.w3.org/2000/svg" viewBox="195.596 226.188 274.408 312.94" fill="none" width="80" height="100">
+      <path d="M271.304 260.638L195.596 304.431V460.885L236.854 484.751V328.418L312.043 284.911L271.304 260.638Z" fill="var(--icon-strong-base)"/>
+      <path d="M330.831 226.188L290.274 249.657L331.055 273.899L348.437 284.249L427.972 331.584V413.744L470.004 389.431V309L330.831 226.188Z" fill="var(--icon-strong-base)"/>
+      <path d="M331.054 491.865L255.977 448.428V495.803L330.83 539.128L470.003 458.606V411.587L414.446 443.645L331.054 491.865Z" fill="var(--icon-strong-base)"/>
+    </svg>
+    <div class="loading-text-area">
+      <span class="loading-status">Just a moment...</span>
+      <div class="progress-track">
+        <div class="progress-fill"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="divider"></div>
+
+<!-- HOME PAGE — DARK THEME -->
+<div class="label">③ Home Page — Dark Theme (Logo component, opacity 12%)</div>
+<div class="home-screen">
+  <div class="home-content">
+    <!-- Logo SVG (wordmark) -->
+    <svg class="home-logo" xmlns="http://www.w3.org/2000/svg" viewBox="342 382 506.43 77.91" fill="none" height="62">
+      <path d="M360.85 390.58L342 401.48V440.43L352.27 446.37V407.45L370.99 396.62L360.85 390.58Z" fill="var(--icon-strong-base)"/>
+      <path d="M375.67 382L365.57 387.84L375.72 393.88L380.05 396.45L399.85 408.24V428.69L410.32 422.64V402.62L375.67 382Z" fill="var(--icon-strong-base)"/>
+      <path d="M375.72 448.14L357.03 437.33V449.12L375.67 459.91L410.32 439.86V428.16L396.49 436.14L375.72 448.14Z" fill="var(--icon-strong-base)"/>
+      <path d="M425.53 396.25H456.4L463.43 403.28V417.06L460.62 419.94L465.61 425V437.87L458.02 445.46H425.53V396.25ZM451.48 416.86L454.01 414.33V406.74L451.55 404.28H434.88V416.87H451.48V416.86ZM453.17 437.46L456.19 434.44V427.55L453.17 424.53H434.89V437.47H453.17V437.46Z" fill="var(--icon-strong-base)"/>
+      <path d="M469.83 396.25H479.39V437.39H504V445.48H469.82V396.25H469.83Z" fill="var(--icon-strong-base)"/>
+      <path d="M524.47 396.25H533.19L551.19 445.47H541.49L537.48 434.57H520.18L516.17 445.47H506.47L524.47 396.25ZM535.37 426.7L528.83 407.99H528.69L522.36 426.7H535.37Z" fill="var(--icon-strong-base)"/>
+      <path d="M552.88 437.39V404.34L560.97 396.25H585.02L592.97 404.2V411.72H583.41V407.71L580.11 404.4H566.05L562.46 407.99V433.73L566.05 437.32H580.11L583.41 434.01V430H592.97V437.52L585.02 445.47H560.97L552.88 437.38V437.39Z" fill="var(--icon-strong-base)"/>
+      <path d="M598.24 396.25H607.8V416.85H615.25L627.13 396.25H637.89L623.47 420.79L639.08 445.47H628.11L615.17 425.01H607.79V445.47H598.23V396.25H598.24Z" fill="var(--icon-strong-base)"/>
+      <path d="M642.61 396.25H673.48L680.51 403.28V417.06L677.7 419.94L682.69 425V437.87L675.1 445.46H642.61V396.25ZM668.56 416.86L671.09 414.33V406.74L668.63 404.28H651.96V416.87H668.56V416.86ZM670.25 437.46L673.27 434.44V427.55L670.25 424.53H651.97V437.47H670.25V437.46Z" fill="var(--icon-strong-base)"/>
+      <path d="M687.61 437.39V404.34L695.7 396.25H721.02L729.11 404.34V437.39L721.02 445.48H695.7L687.61 437.39ZM715.95 437.32L719.54 433.73V407.99L715.95 404.4H700.76L697.17 407.99V433.73L700.76 437.32H715.95Z" fill="var(--icon-strong-base)"/>
+      <path d="M747.67 420.09L731.21 396.25H741.97L753.08 412.42L764.19 396.25H774.95L758.49 420.37L775.65 445.48H764.89L753.08 428.11L741.27 445.48H730.51L747.67 420.09Z" fill="var(--icon-strong-base)"/>
+      <path d="M777.41 442.45V437.95L780.43 434.93H785.56L788.51 438.02V442.38L785.56 445.47H780.43L777.41 442.45Z" fill="var(--icon-strong-base)"/>
+      <path d="M808.28 396.25H817L835 445.47H825.3L821.29 434.57H803.99L799.98 445.47H790.28L808.28 396.25ZM819.18 426.7L812.64 407.99H812.5L806.17 426.7H819.18Z" fill="var(--icon-strong-base)"/>
+      <path d="M838.87 396.25H848.43V445.47H838.87V396.25Z" fill="var(--icon-strong-base)"/>
+    </svg>
+    <button class="server-btn">
+      <div class="server-dot"></div>
+      localhost
+    </button>
+    <div class="recent-projects">
+      <div class="recent-header">
+        <span class="recent-title">Recent Projects</span>
+      </div>
+      <button class="project-item">~/projects/my-app <span class="project-time">2 hours ago</span></button>
+      <button class="project-item">~/work/backend <span class="project-time">yesterday</span></button>
+    </div>
+  </div>
+</div>
+
+<div class="divider"></div>
+
+<!-- HOME PAGE — LIGHT THEME -->
+<div class="label">④ Home Page — Light Theme</div>
+<div class="home-screen light-theme">
+  <div class="home-content">
+    <svg class="home-logo" xmlns="http://www.w3.org/2000/svg" viewBox="342 382 506.43 77.91" fill="none" height="62">
+      <path d="M360.85 390.58L342 401.48V440.43L352.27 446.37V407.45L370.99 396.62L360.85 390.58Z" fill="var(--icon-strong-base)"/>
+      <path d="M375.67 382L365.57 387.84L375.72 393.88L380.05 396.45L399.85 408.24V428.69L410.32 422.64V402.62L375.67 382Z" fill="var(--icon-strong-base)"/>
+      <path d="M375.72 448.14L357.03 437.33V449.12L375.67 459.91L410.32 439.86V428.16L396.49 436.14L375.72 448.14Z" fill="var(--icon-strong-base)"/>
+      <path d="M425.53 396.25H456.4L463.43 403.28V417.06L460.62 419.94L465.61 425V437.87L458.02 445.46H425.53V396.25ZM451.48 416.86L454.01 414.33V406.74L451.55 404.28H434.88V416.87H451.48V416.86ZM453.17 437.46L456.19 434.44V427.55L453.17 424.53H434.89V437.47H453.17V437.46Z" fill="var(--icon-strong-base)"/>
+      <path d="M469.83 396.25H479.39V437.39H504V445.48H469.82V396.25H469.83Z" fill="var(--icon-strong-base)"/>
+      <path d="M524.47 396.25H533.19L551.19 445.47H541.49L537.48 434.57H520.18L516.17 445.47H506.47L524.47 396.25ZM535.37 426.7L528.83 407.99H528.69L522.36 426.7H535.37Z" fill="var(--icon-strong-base)"/>
+      <path d="M552.88 437.39V404.34L560.97 396.25H585.02L592.97 404.2V411.72H583.41V407.71L580.11 404.4H566.05L562.46 407.99V433.73L566.05 437.32H580.11L583.41 434.01V430H592.97V437.52L585.02 445.47H560.97L552.88 437.38V437.39Z" fill="var(--icon-strong-base)"/>
+      <path d="M598.24 396.25H607.8V416.85H615.25L627.13 396.25H637.89L623.47 420.79L639.08 445.47H628.11L615.17 425.01H607.79V445.47H598.23V396.25H598.24Z" fill="var(--icon-strong-base)"/>
+      <path d="M642.61 396.25H673.48L680.51 403.28V417.06L677.7 419.94L682.69 425V437.87L675.1 445.46H642.61V396.25ZM668.56 416.86L671.09 414.33V406.74L668.63 404.28H651.96V416.87H668.56V416.86ZM670.25 437.46L673.27 434.44V427.55L670.25 424.53H651.97V437.47H670.25V437.46Z" fill="var(--icon-strong-base)"/>
+      <path d="M687.61 437.39V404.34L695.7 396.25H721.02L729.11 404.34V437.39L721.02 445.48H695.7L687.61 437.39ZM715.95 437.32L719.54 433.73V407.99L715.95 404.4H700.76L697.17 407.99V433.73L700.76 437.32H715.95Z" fill="var(--icon-strong-base)"/>
+      <path d="M747.67 420.09L731.21 396.25H741.97L753.08 412.42L764.19 396.25H774.95L758.49 420.37L775.65 445.48H764.89L753.08 428.11L741.27 445.48H730.51L747.67 420.09Z" fill="var(--icon-strong-base)"/>
+      <path d="M777.41 442.45V437.95L780.43 434.93H785.56L788.51 438.02V442.38L785.56 445.47H780.43L777.41 442.45Z" fill="var(--icon-strong-base)"/>
+      <path d="M808.28 396.25H817L835 445.47H825.3L821.29 434.57H803.99L799.98 445.47H790.28L808.28 396.25ZM819.18 426.7L812.64 407.99H812.5L806.17 426.7H819.18Z" fill="var(--icon-strong-base)"/>
+      <path d="M838.87 396.25H848.43V445.47H838.87V396.25Z" fill="var(--icon-strong-base)"/>
+    </svg>
+    <button class="server-btn">
+      <div class="server-dot"></div>
+      localhost
+    </button>
+    <div class="recent-projects">
+      <div class="recent-header">
+        <span class="recent-title">Recent Projects</span>
+      </div>
+      <button class="project-item">~/projects/my-app <span class="project-time">2 hours ago</span></button>
+      <button class="project-item">~/work/backend <span class="project-time">yesterday</span></button>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>
