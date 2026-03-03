@@ -2,8 +2,7 @@ import { ComponentProps } from "solid-js"
 
 export const Mark = (props: { class?: string }) => {
   return (
-    <svg xmlns="http://www.w3.org/2000/svg" data-component="logo-mark" classList={{ [props.class ?? ""]: !!props.class }}
-      viewBox="0 0 350 400" fill="none">
+    <svg xmlns="http://www.w3.org/2000/svg" classList={{ [props.class ?? ""]: !!props.class }} viewBox="0 0 350 400" fill="none">
       <path d="M71.4799 283.646V340.856L174.983 400L350 300.004V242.795L175 342.808L71.4799 283.646Z" fill="var(--icon-strong-base)" />
       <path d="M299.95 128.583V246.889L350 218.284V99.9957L174.983 0L124.95 28.5875L299.95 128.583Z" fill="var(--icon-strong-base)" />
       <path d="M0 99.9957V300.004L50.0499 328.609V128.583L153.553 69.4218L103.52 40.8343L0 99.9957Z" fill="var(--icon-strong-base)" />
