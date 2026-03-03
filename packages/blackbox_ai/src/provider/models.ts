@@ -257,9 +257,9 @@ const BLACKBOX_AI_PROVIDER = {
     },
     // ── Free models on Blackbox AI ─────────────────────────────────────────
     // These two models are available without an API key / subscription.
-    "blackboxai/moonshot/kimi-k2.5": {
-      id: "blackboxai/moonshot/kimi-k2.5",
-      name: "Kimi K2.5 (Free)",
+    "blackboxai/moonshotai/kimi-k2.5": {
+      id: "blackboxai/moonshotai/kimi-k2.5",
+      name: "Kimi K2.5",
       family: "kimi",
       release_date: "2025-01-01",
       attachment: false,
