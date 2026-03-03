@@ -3,6 +3,7 @@ import { MetaProvider } from "@solidjs/meta"
 import "@opencode-ai/app/index.css"
 import { Font } from "@opencode-ai/ui/font"
 import { Progress } from "@opencode-ai/ui/progress"
+import { Splash } from "@opencode-ai/ui/logo"
 import "./styles.css"
 import { createEffect, createMemo, createSignal, onCleanup, onMount } from "solid-js"
 import { commands, events, InitStep } from "./bindings"
@@ -63,11 +64,7 @@ render(() => {
       <div class="w-screen h-screen bg-background-base flex items-center justify-center">
         <Font />
         <div class="flex flex-col items-center gap-11">
-          <svg xmlns="http://www.w3.org/2000/svg" class="w-20 h-25 opacity-15" viewBox="0 0 350 400" fill="none">
-            <path d="M71.4799 283.646V340.856L174.983 400L350 300.004V242.795L175 342.808L71.4799 283.646Z" fill="var(--icon-strong-base)" />
-            <path d="M299.95 128.583V246.889L350 218.284V99.9957L174.983 0L124.95 28.5875L299.95 128.583Z" fill="var(--icon-strong-base)" />
-            <path d="M0 99.9957V300.004L50.0499 328.609V128.583L153.553 69.4218L103.52 40.8343L0 99.9957Z" fill="var(--icon-strong-base)" />
-          </svg>
+          <Splash class="w-20 h-25 opacity-15" />
           <div class="w-60 flex flex-col items-center gap-4" aria-live="polite">
             <span class="w-full overflow-hidden text-center text-ellipsis whitespace-nowrap text-text-strong text-14-normal">
               {status()}

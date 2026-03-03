@@ -116,12 +116,26 @@ All 4 critical tests passed with API key `sk-VtGedoIpoHzL0_Kl0NRiuA`:
 
 ---
 
-## Phase 7: Branding Assets — PENDING TEAM INPUT 🟡
+## Phase 7: Branding Assets — IN PROGRESS 🔵
 
-- [ ] Get app icon: PNG 512×512, ICO (Windows), ICNS (macOS)
-- [ ] Get tray icon: PNG 16×16, 32×32 (dark + light variants)
-- [ ] Replace `packages/identity/mark*.png` and `mark*.svg` with Blackbox AI assets
-- [ ] Update `packages/desktop/src-tauri/tauri.conf.json` icon paths
+Assets provided by team:
+- Logo SVG (1190×842): BLACKBOX AI wordmark — white (dark theme) / black (light theme)
+- Mark SVG (688×765): Geometric hexagonal mark — loader/splash icon
+- PNG: App icon (small, dark background)
+
+- [x] Update `packages/ui/src/components/logo.tsx` — Logo, Mark, Splash components with new SVG paths
+- [x] Update `packages/desktop/src/loading.tsx` — Replace inline SVG with Splash component
+- [x] Create `packages/identity/logo.svg` — dark theme wordmark
+- [x] Create `packages/identity/logo-light.svg` — light theme wordmark (black fills)
+- [x] Update `packages/identity/mark.svg` — dark theme geometric mark
+- [x] Update `packages/identity/mark-light.svg` — light theme geometric mark (black fills)
+- [x] Create `packages/desktop/scripts/generate-icons.sh` — script to generate all icon sizes via `tauri icon`
+- [x] Created `logo-test.html` — SVG rendering test (dark/light, logo/mark)
+- [x] Created `logo-test-full.html` — Full UI simulation (loading screen + home page, dark/light themes)
+- [x] Visual verification: CSS variable `var(--icon-strong-base)` correctly switches fills per theme
+- [ ] Run `generate-icons.sh` to produce ICO/ICNS/PNG icon sizes from SVG source
+- [ ] Run `bun run tauri dev` from VSCode terminal (requires ~10-15 min Rust first-time compilation)
+- [ ] Get tray icon: PNG 16×16, 32×32 (dark + light variants) — pending
 
 ---
 
@@ -148,7 +162,7 @@ All 4 critical tests passed with API key `sk-VtGedoIpoHzL0_Kl0NRiuA`:
 | 4 — Live API Testing | ✅ Complete | 4/4 tests passed |
 | 5 — Backend Integration | ✅ Complete | 5 files updated |
 | 6 — Distribution | 🟡 Blocked | Waiting for npm package name |
-| 7 — Branding Assets | 🟡 Blocked | Waiting for icon files |
+| 7 — Branding Assets | 🔵 In Progress | Assets received, SVGs integrated |
 | 8 — Testing | ⬜ Pending | After Phase 5 |
 
 **Next action: Phase 8 — Testing & Verification (run with real API key)**

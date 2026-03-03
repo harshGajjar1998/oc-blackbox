@@ -1,0 +1,79 @@
+#!/usr/bin/env bash
+# Blackbox AI CLI — Install Script
+# Usage: curl -fsSL https://blackbox.ai/install | bash
+
+set -euo pipefail
+
+BLACKBOXAI_VERSION="${BLACKBOXAI_VERSION:-latest}"
+BLACKBOXAI_CHANNEL="${BLACKBOXAI_CHANNEL:-stable}"
+
+error() {
+  echo "error: $*" >&2
+  exit 1
+}
+
+info() {
+  echo "info: $*"
+}
+
+detect_platform() {
+  local os arch
+  os="$(uname -s)"
+  arch="$(uname -m)"
+
+  case "$os" in
+    Linux)
+      case "$arch" in
+        x86_64) echo "linux-x64" ;;
+        aarch64) echo "linux-arm64" ;;
+        *) error "Unsupported Linux architecture: $arch" ;;
+      esac
+      ;;
+    Darwin)
+      case "$arch" in
+        x86_64) echo "darwin-x64" ;;
+        arm64) echo "darwin-arm64" ;;
+        *) error "Unsupported macOS architecture: $arch" ;;
+      esac
+      ;;
+    *)
+      error "Unsupported operating system: $os"
+      ;;
+  esac
+}
+
+install_blackboxai() {
+  local platform
+  platform="$(detect_platform)"
+
+  info "Detected platform: $platform"
+  info "Installing Blackbox AI CLI ($BLACKBOXAI_CHANNEL/$BLACKBOXAI_VERSION)..."
+
+  local install_dir="${BLACKBOXAI_INSTALL_DIR:-$HOME/.blackboxai/bin}"
+  mkdir -p "$install_dir"
+
+  local download_url="https://github.com/blackboxai/blackboxai/releases/${BLACKBOXAI_VERSION}/download/blackboxai-${platform}.tar.gz"
+
+  info "Downloading from: $download_url"
+
+  if command -v curl &>/dev/null; then
+    curl -fsSL "$download_url" | tar -xz -C "$install_dir"
+  elif command -v wget &>/dev/null; then
+    wget -qO- "$download_url" | tar -xz -C "$install_dir"
+  else
+    error "Neither curl nor wget found. Please install one and try again."
+  fi
+
+  chmod +x "$install_dir/blackboxai"
+
+  info "Blackbox AI CLI installed to $install_dir/blackboxai"
+  info ""
+  info "Add the following to your shell profile to use blackboxai:"
+  info "  export PATH=\"\$PATH:$install_dir\""
+  info ""
+  info "Or run directly: $install_dir/blackboxai"
+  info ""
+  info "Get started: blackboxai auth blackbox-ai"
+}
+
+install_blackboxai
