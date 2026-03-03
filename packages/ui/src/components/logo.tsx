@@ -16,12 +16,13 @@ export const Splash = (props: Pick<ComponentProps<"svg">, "ref" | "class">) => {
       ref={props.ref}
       data-component="logo-splash"
       classList={{ [props.class ?? ""]: !!props.class }}
-      viewBox="0 0 80 100"
+      viewBox="0 0 350 400"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
     >
-      <path d="M60 80H20V40H60V80Z" fill="var(--icon-base)" />
-      <path d="M60 20H20V80H60V20ZM80 100H0V0H80V100Z" fill="var(--icon-strong-base)" />
+      <path d="M71.4799 283.646V340.856L174.983 400L350 300.004V242.795L175 342.808L71.4799 283.646Z" fill="var(--icon-strong-base)" />
+      <path d="M299.95 128.583V246.889L350 218.284V99.9957L174.983 0L124.95 28.5875L299.95 128.583Z" fill="var(--icon-strong-base)" />
+      <path d="M0 99.9957V300.004L50.0499 328.609V128.583L153.553 69.4218L103.52 40.8343L0 99.9957Z" fill="var(--icon-strong-base)" />
     </svg>
   )
 }
