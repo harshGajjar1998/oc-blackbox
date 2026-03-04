@@ -206,6 +206,46 @@ Issues found during live desktop app testing (2026-03-04):
 
 ---
 
+## Warnings & Pending Items Checklist
+
+### 🔴 Build Warnings (from `bun run tauri build`)
+
+| # | Warning | File | Severity | Action Required |
+|---|---------|------|----------|-----------------|
+| W1 | `warning 5040: Unsupported format` for `nsis-sidebar.bmp` | `packages/desktop/src-tauri/assets/nsis-sidebar.bmp` | Low | Replace BMP with NSIS-compatible format (24-bit BMP, no compression). Cosmetic only — installer still builds. |
+| W2 | `warning 5040: Unsupported format` for `nsis-header.bmp` | `packages/desktop/src-tauri/assets/nsis-header.bmp` | Low | Replace BMP with NSIS-compatible format (24-bit BMP, no compression). Cosmetic only — installer still builds. |
+| W3 | `dead_code` warning: `fn export_types` is never used | `packages/desktop/src-tauri/src/lib.rs:385` | Low | Either call `export_types()` in the build pipeline or add `#[allow(dead_code)]` attribute. Pre-existing warning. |
+
+### 🟡 Pending Tasks (Blocked / Waiting on Team)
+
+| # | Task | Blocked By | Phase |
+|---|------|-----------|-------|
+| P1 | Update npm package name from `opencode-ai` to Blackbox AI package name | Waiting for team to provide official npm package name | Phase 5.6 |
+| P2 | Get GitHub repo URL for curl-based installs | Waiting for team | Phase 6 |
+| P3 | Get Brew formula name (macOS) | Waiting for team | Phase 6 |
+| P4 | Get Chocolatey/Scoop package name (Windows) | Waiting for team | Phase 6 |
+| P5 | Update `install` script with new package name | Blocked by P1 | Phase 6 |
+| P6 | Update all README files with new install instructions | Blocked by P1, P2 | Phase 6 |
+| P7 | Get tray icon assets: PNG 16×16, 32×32 (dark + light variants) | Waiting for design assets from team | Phase 7 |
+| P8 | Run `generate-icons.sh` to produce ICO/ICNS/PNG icon sizes from new Blackbox AI SVG source | Requires ImageMagick/rsvg-convert installed | Phase 7 |
+| P9 | App store / package distribution setup | Waiting for team to provide official package name | Phase 6 |
+| P10 | Loading screen visual verification (requires slow init path — DB migration) | Needs production install or forced slow init | Phase 8 |
+
+### 🔵 Post-Build Follow-up Items
+
+| # | Task | Priority | Notes |
+|---|------|----------|-------|
+| F1 | Test installer: run `Blackbox AI_1.2.14_x64-setup.exe` and verify install wizard | Medium | Skipped for internal build — do before public release |
+| F2 | Verify installed app shows "Blackbox AI" (not "Dev") in title bar | Medium | Confirms prod config overlay worked correctly |
+| F3 | Verify sidecar `opencode-cli` launches correctly from installed location | Medium | Critical for app functionality post-install |
+| F4 | Fix NSIS BMP warnings (W1, W2) — regenerate assets as 24-bit uncompressed BMP | Low | Cosmetic — installer works without this fix |
+| F5 | Fix `export_types` dead_code warning (W3) in `lib.rs` | Low | Add `#[allow(dead_code)]` or wire up to build script |
+| F6 | Add `tauri.beta.conf.json` identifier fix: `ai.opencode.desktop.beta` → `ai.blackbox.desktop.beta` | Medium | Same issue as prod config — needs fixing before beta builds |
+| F7 | Set up code signing certificate for production releases | High | Required for Windows SmartScreen trust; currently unsigned |
+| F8 | Set up auto-updater endpoint for Blackbox AI releases | High | `plugins.updater` removed from prod config — needs Blackbox AI GitHub releases URL |
+
+---
+
 ## Phase 9: Bug Fixes (Post-Testing) ✅ COMPLETE
 
 Bugs discovered during live integration testing and fixed:
