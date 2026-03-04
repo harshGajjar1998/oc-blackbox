@@ -212,9 +212,9 @@ Issues found during live desktop app testing (2026-03-04):
 
 | # | Warning | File | Severity | Action Required |
 |---|---------|------|----------|-----------------|
-| W1 | `warning 5040: Unsupported format` for `nsis-sidebar.bmp` | `packages/desktop/src-tauri/assets/nsis-sidebar.bmp` | Low | Replace BMP with NSIS-compatible format (24-bit BMP, no compression). Cosmetic only — installer still builds. |
-| W2 | `warning 5040: Unsupported format` for `nsis-header.bmp` | `packages/desktop/src-tauri/assets/nsis-header.bmp` | Low | Replace BMP with NSIS-compatible format (24-bit BMP, no compression). Cosmetic only — installer still builds. |
-| W3 | `dead_code` warning: `fn export_types` is never used | `packages/desktop/src-tauri/src/lib.rs:385` | Low | Either call `export_types()` in the build pipeline or add `#[allow(dead_code)]` attribute. Pre-existing warning. |
+| ~~W1~~ | ~~`warning 5040: Unsupported format` for `nsis-sidebar.bmp`~~ | `packages/desktop/src-tauri/assets/nsis-sidebar.bmp` | ✅ Fixed | Regenerated as 164×314, 24-bit uncompressed BMP (compression=0) via `fix-nsis-bmp.ps1`. |
+| ~~W2~~ | ~~`warning 5040: Unsupported format` for `nsis-header.bmp`~~ | `packages/desktop/src-tauri/assets/nsis-header.bmp` | ✅ Fixed | Regenerated as 150×57, 24-bit uncompressed BMP (compression=0) via `fix-nsis-bmp.ps1`. |
+| ~~W3~~ | ~~`dead_code` warning: `fn export_types` is never used~~ | `packages/desktop/src-tauri/src/lib.rs` | ✅ Fixed | Added `#[cfg(any(debug_assertions, test))]` to `fn export_types` — function now only compiled when used. |
 
 ### 🟡 Pending Tasks (Blocked / Waiting on Team)
 
@@ -238,9 +238,9 @@ Issues found during live desktop app testing (2026-03-04):
 | F1 | Test installer: run `Blackbox AI_1.2.14_x64-setup.exe` and verify install wizard | Medium | Skipped for internal build — do before public release |
 | F2 | Verify installed app shows "Blackbox AI" (not "Dev") in title bar | Medium | Confirms prod config overlay worked correctly |
 | F3 | Verify sidecar `opencode-cli` launches correctly from installed location | Medium | Critical for app functionality post-install |
-| F4 | Fix NSIS BMP warnings (W1, W2) — regenerate assets as 24-bit uncompressed BMP | Low | Cosmetic — installer works without this fix |
-| F5 | Fix `export_types` dead_code warning (W3) in `lib.rs` | Low | Add `#[allow(dead_code)]` or wire up to build script |
-| F6 | Add `tauri.beta.conf.json` identifier fix: `ai.opencode.desktop.beta` → `ai.blackbox.desktop.beta` | Medium | Same issue as prod config — needs fixing before beta builds |
+| ~~F4~~ | ~~Fix NSIS BMP warnings (W1, W2) — regenerate assets as 24-bit uncompressed BMP~~ | ✅ Done | Regenerated both BMPs: header 150×57, sidebar 164×314, both 24-bit BI_RGB. |
+| ~~F5~~ | ~~Fix `export_types` dead_code warning (W3) in `lib.rs`~~ | ✅ Done | Added `#[cfg(any(debug_assertions, test))]` to `fn export_types`. |
+| ~~F6~~ | ~~Fix `tauri.beta.conf.json` identifier: `ai.opencode.desktop.beta` → `ai.blackbox.desktop.beta`~~ | ✅ Done | Identifier updated in `tauri.beta.conf.json`. |
 | F7 | Set up code signing certificate for production releases | High | Required for Windows SmartScreen trust; currently unsigned |
 | F8 | Set up auto-updater endpoint for Blackbox AI releases | High | `plugins.updater` removed from prod config — needs Blackbox AI GitHub releases URL |
 
