@@ -107,11 +107,16 @@ fn get_cli_install_path() -> Option<std::path::PathBuf> {
 
 pub fn get_sidecar_path(app: &tauri::AppHandle) -> std::path::PathBuf {
     // Get binary with symlinks support
+    let binary_name = if cfg!(windows) {
+        "opencode-cli.exe"
+    } else {
+        "opencode-cli"
+    };
     tauri::process::current_binary(&app.env())
         .expect("Failed to get current binary")
         .parent()
         .expect("Failed to get parent dir")
-        .join("opencode-cli")
+        .join(binary_name)
 }
 
 fn is_cli_installed() -> bool {
@@ -422,8 +427,19 @@ pub fn serve(
     hostname: &str,
     port: u32,
     password: &str,
-) -> (CommandChild, oneshot::Receiver<TerminatedPayload>) {
+) -> Result<(CommandChild, oneshot::Receiver<TerminatedPayload>), String> {
     let (exit_tx, exit_rx) = oneshot::channel::<TerminatedPayload>();
+
+    let sidecar_path = get_sidecar_path(app);
+    tracing::info!(path = %sidecar_path.display(), "Sidecar path resolved");
+
+    if !sidecar_path.exists() {
+        return Err(format!(
+            "Sidecar binary not found at: {}. \
+             Please reinstall the application.",
+            sidecar_path.display()
+        ));
+    }
 
     tracing::info!(port, "Spawning sidecar");
 
@@ -437,7 +453,14 @@ pub fn serve(
         format!("--print-logs --log-level WARN serve --hostname {hostname} --port {port}").as_str(),
         &envs,
     )
-    .expect("Failed to spawn Blackbox AI");
+    .map_err(|e| {
+        tracing::error!("Failed to spawn sidecar: {e}");
+        format!(
+            "Failed to start the Blackbox AI server process: {e}. \
+             If you are on Windows, please ensure the Visual C++ Redistributable is installed \
+             (https://aka.ms/vs/17/release/vc_redist.x64.exe)."
+        )
+    })?;
 
     let mut exit_tx = Some(exit_tx);
     tokio::spawn(
@@ -471,7 +494,7 @@ pub fn serve(
             .instrument(tracing::info_span!("sidecar")),
     );
 
-    (child, exit_rx)
+    Ok((child, exit_rx))
 }
 
 pub mod sqlite_migration {

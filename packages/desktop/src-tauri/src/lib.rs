@@ -461,6 +461,14 @@ async fn initialize(app: AppHandle) {
 
             // we delay spawning this future so that the timeout is created lazily
             let cli_health_check = match server_connection {
+                ServerConnection::Failed { error } => {
+                    tracing::error!("Server connection failed: {error}");
+                    let _ = server_ready_tx.send(Err(format!(
+                        "Failed to start Blackbox AI Server: {error}\n\nLogs:\n{}",
+                        get_logs()
+                    )));
+                    None
+                }
                 ServerConnection::CLI {
                     child,
                     health_check,
@@ -592,6 +600,9 @@ enum ServerConnection {
         child: CommandChild,
         health_check: server::HealthCheck,
     },
+    Failed {
+        error: String,
+    },
 }
 
 async fn setup_server_connection(app: AppHandle) -> ServerConnection {
@@ -623,15 +634,18 @@ async fn setup_server_connection(app: AppHandle) -> ServerConnection {
     let password = uuid::Uuid::new_v4().to_string();
 
     tracing::info!("Spawning new local server");
-    let (child, health_check) =
-        server::spawn_local_server(app, hostname.to_string(), local_port, password.clone());
-
-    ServerConnection::CLI {
-        url: local_url,
-        username: Some("opencode".to_string()),
-        password: Some(password),
-        child,
-        health_check,
+    match server::spawn_local_server(app, hostname.to_string(), local_port, password.clone()) {
+        Ok((child, health_check)) => ServerConnection::CLI {
+            url: local_url,
+            username: Some("opencode".to_string()),
+            password: Some(password),
+            child,
+            health_check,
+        },
+        Err(e) => {
+            tracing::error!("Failed to spawn local server: {e}");
+            ServerConnection::Failed { error: e }
+        }
     }
 }
 
