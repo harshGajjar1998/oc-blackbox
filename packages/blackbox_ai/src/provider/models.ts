@@ -53,8 +53,8 @@ const BLACKBOX_AI_PROVIDER = {
       modalities: { input: ["text", "image"], output: ["text"] },
       options: {},
     },
-    "blackboxai/anthropic/claude-3-7-sonnet:thinking": {
-      id: "blackboxai/anthropic/claude-3-7-sonnet:thinking",
+    "blackboxai/anthropic/claude-3.7-sonnet:thinking": {
+      id: "blackboxai/anthropic/claude-3.7-sonnet:thinking",
       name: "Claude 3.7 Sonnet Thinking (Blackbox AI)",
       family: "claude",
       release_date: "2025-01-01",
@@ -286,21 +286,7 @@ const BLACKBOX_AI_PROVIDER = {
       options: {},
     },
     // ── Blackbox AI premium/subscription models ────────────────────────────
-    // These require a Blackbox AI Pro or Pro Plus subscription (BLACKBOXAI_API_KEY).
-    "blackboxai/blackbox-pro-plus": {
-      id: "blackboxai/blackbox-pro-plus",
-      name: "Blackbox Pro Plus",
-      family: "blackbox",
-      release_date: "2024-01-01",
-      attachment: true,
-      reasoning: true,
-      temperature: true,
-      tool_call: true,
-      cost: { input: 1.0, output: 3.0 },
-      limit: { context: 200000, output: 65536 },
-      modalities: { input: ["text", "image"], output: ["text"] },
-      options: {},
-    },
+    // These require a Blackbox AI Pro subscription (BLACKBOXAI_API_KEY).
     "blackboxai/blackbox-pro": {
       id: "blackboxai/blackbox-pro",
       name: "Blackbox Pro",

@@ -1302,7 +1302,7 @@ export namespace Provider {
 
   // Priority list: LAST entry wins (highest index = highest priority with "desc" sort).
   // Blackbox AI native models are placed at the end so they rank first.
-  const priority = ["gpt-5", "claude-sonnet-4", "big-pickle", "gemini-3-pro", "blackbox-pro", "blackbox-pro-plus"]
+  const priority = ["gpt-5", "claude-sonnet-4", "big-pickle", "gemini-3-pro", "blackbox-pro"]
   export function sort(models: Model[]) {
     return sortBy(
       models,
