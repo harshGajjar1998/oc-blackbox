@@ -149,8 +149,8 @@ Assets provided by team:
 - [x] Test streaming works — PASSED (78 SSE chunks, `data: [DONE]` confirmed)
 - [x] Test free-tier model filter — PASSED (Kimi K2.5 + MiniMax M2.5 only without API key)
 - [x] Test provider registered in sidecar — PASSED (`blackbox-ai` in 98-provider list, 21 models)
-- [ ] Test tool calling works (file read/write, bash commands) — requires full Tauri app launch
-- [ ] Test enterprise URL override works — requires full Tauri app launch
+- [x] Test tool calling works (file read/write, bash commands) — PASSED (read tool called, returned `import fs from "fs/promises"`)
+- [x] Test enterprise URL override works — PASSED (custom URL `https://custom.enterprise.blackbox.ai/v1/chat/completions` confirmed in sidecar log)
 
 ---
 
@@ -165,6 +165,18 @@ Assets provided by team:
 | 5 — Backend Integration | ✅ Complete | 5 files updated |
 | 6 — Distribution | 🟡 Blocked | Waiting for npm package name |
 | 7 — Branding Assets | ✅ Complete | SVG assets integrated, icon script ready |
-| 8 — Testing | ✅ Complete | 8/10 tests passed (2 require full Tauri app) |
+| 8 — Testing | ✅ Complete | 10/10 tests passed |
+| 9 — Bug Fixes | ✅ Complete | Fixed invalid model IDs (blackbox-pro-plus → removed, claude-3-7-sonnet → claude-3.7-sonnet) |
 
-**Status: READY FOR PRODUCT TESTING — run `bun run tauri dev` with `BLACKBOXAI_API_KEY` set to launch the full desktop app.**
+**Status: ALL TESTS PASSED — Blackbox AI IDE rebranding complete. Pushed to `origin/blackboxai/rebranding-and-api-research`.**
+
+---
+
+## Phase 9: Bug Fixes (Post-Testing) ✅ COMPLETE
+
+Bugs discovered during live integration testing and fixed:
+
+- [x] `blackboxai/blackbox-pro-plus` — invalid model ID (API returns 400). Removed from `models.ts`. The valid model is `blackboxai/blackbox-pro`.
+- [x] `blackboxai/anthropic/claude-3-7-sonnet:thinking` — wrong ID format (hyphen vs dot). Fixed to `blackboxai/anthropic/claude-3.7-sonnet:thinking`.
+- [x] `provider.ts` priority list — removed `blackbox-pro-plus` reference.
+- [x] Committed and pushed: `fix: correct Blackbox AI model IDs - remove invalid blackbox-pro-plus, fix claude-3.7-sonnet ID`
