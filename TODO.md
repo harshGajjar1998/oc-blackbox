@@ -154,6 +154,19 @@ Assets provided by team:
 
 ---
 
+## Phase 10: Visual UI Bug Fixes (Post-Launch Testing) 🔵 IN PROGRESS
+
+Issues found during live desktop app testing (2026-03-04):
+
+- [x] Fix 1: Remove "opencode" (OpenCode Zen) from `popularProviders` array — `use-providers.ts`
+- [x] Fix 2: Filter "opencode" from `connected` memo — hides OpenCode Zen from Connected providers + Models list everywhere
+- [x] Fix 3: Loading screen logo opacity — change `opacity-15` → `opacity-80` in `loading.tsx`
+- [x] Fix 4: Rebuild sidecar binary — fixes 21→20 Blackbox AI models (binary predates blackbox-pro-plus removal commit)
+- [x] Fix 5: Remove "opencode" from `dialog-select-provider.tsx` items list — was still appearing in "Connect provider" / "View All" dialog
+- [x] Fix 6: Change "Recommended" badge in `dialog-select-provider.tsx` from `opencode` → `blackbox-ai`
+
+---
+
 ## Summary
 
 | Phase | Status | Description |

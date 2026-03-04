@@ -3,7 +3,8 @@ import { decode64 } from "@/utils/base64"
 import { useParams } from "@solidjs/router"
 import { createMemo } from "solid-js"
 
-export const popularProviders = ["blackbox-ai", "opencode", "anthropic", "github-copilot", "openai", "google", "openrouter", "vercel"]
+// "opencode" (OpenCode Zen) intentionally excluded — this is a Blackbox AI product
+export const popularProviders = ["blackbox-ai", "anthropic", "github-copilot", "openai", "google", "openrouter", "vercel"]
 const popularProviderSet = new Set(popularProviders)
 
 export function useProviders() {
@@ -18,7 +19,8 @@ export function useProviders() {
     return globalSync.data.provider
   })
   const connectedIDs = createMemo(() => new Set(providers().connected))
-  const connected = createMemo(() => providers().all.filter((p) => connectedIDs().has(p.id)))
+  // Filter out "opencode" (OpenCode Zen) — not a Blackbox AI provider, should not appear anywhere in the UI
+  const connected = createMemo(() => providers().all.filter((p) => connectedIDs().has(p.id) && p.id !== "opencode"))
   const paid = createMemo(() =>
     connected().filter((p) => {
       // Hide opencode/blackbox-ai from "paid" list if they only have free models
