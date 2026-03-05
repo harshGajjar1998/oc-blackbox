@@ -1,6 +1,23 @@
 packages/desktop/src-tauri/target/release/bundle/nsis/
+
+# Dependencies
 node_modules/
 **/node_modules/
+
+# Build and tool outputs
 .turbo/
 .sst/
-node_modules
+.cache/
+**/.cache/
+dist/
+build/
+coverage/
+
+# Temp and logs
+tmp/
+temp/
+*.log
+
+# OS files
+.DS_Store
+Thumbs.db
