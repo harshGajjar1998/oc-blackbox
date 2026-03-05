@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+echo "Blackbox AI install script placeholder."
+echo "This file is embedded in desktop binary via include_str! for CLI bootstrap/help flows."

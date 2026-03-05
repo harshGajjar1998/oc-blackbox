@@ -1,0 +1,11 @@
+- [x] Update provider dialog to show Blackbox AI as default/recommended provider
+- [x] Remove OpenCode providers from provider selection list
+- [x] Restrict model dialog to Blackbox-only models
+- [x] Group model list into "Free models" and "Pro models"
+- [x] Remove OpenCode-specific labels/conditions in model/provider UI
+- [x] Update sidebar/getting-started provider copy to Blackbox-only messaging
+- [x] Verify with targeted searches that OpenCode provider UI references are removed from affected screens
+- [ ] Generate NSIS BMP installer assets from `packages/desktop/src-tauri/assets/BlackBox-AI-Logo.png`
+- [ ] Rebuild desktop installer and verify no NSIS image format warnings
+- [ ] Update main dashboard logo color behavior to white (dark and light)
+- [ ] Run final verification search/build smoke check

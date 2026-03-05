@@ -1,0 +1,6 @@
+packages/desktop/src-tauri/target/release/bundle/nsis/
+node_modules/
+**/node_modules/
+.turbo/
+.sst/
+node_modules
