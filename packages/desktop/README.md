@@ -21,6 +21,12 @@ bun run --cwd packages/desktop tauri dev
 bun run --cwd packages/desktop tauri build
 ```
 
+## Updater keys
+
+For updater signing key generation, rotation, and production secret storage, see:
+
+- `docs/desktop-updater-keys.md`
+
 ## Troubleshooting
 
 ### Rust compiler not found
