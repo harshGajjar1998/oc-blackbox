@@ -63,6 +63,24 @@ Secrets to create:
 - `TAURI_SIGNING_PRIVATE_KEY`
 - `TAURI_SIGNING_PRIVATE_KEY_PASSWORD`
 
+## 5.1) GitHub repository setup (production)
+
+In your GitHub repo:
+
+1. Go to **Settings → Secrets and variables → Actions**.
+2. Add repository secrets:
+	- `TAURI_SIGNING_PRIVATE_KEY` = full private key content
+	- `TAURI_SIGNING_PRIVATE_KEY_PASSWORD` = private key password
+3. Ensure release workflow exists:
+	- `.github/workflows/desktop-release.yml`
+
+Trigger options:
+
+- Push a tag like `desktop-v1.0.0`
+- Or run the workflow manually from **Actions → Desktop Release (Signed Updater)**
+
+The workflow builds signed artifacts and uploads `latest.json` + installers to the GitHub release.
+
 ## 6) Key rotation (future)
 
 Use safe rotation to avoid breaking existing users:
