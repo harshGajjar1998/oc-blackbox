@@ -306,7 +306,7 @@ export default function () {
                               </For>
                             </div>
                             <div class="px-4 flex items-center justify-center pt-20 pb-8 shrink-0">
-                              <Logo class="w-58.5 opacity-12" />
+                              <Logo class="w-58.5" />
                             </div>
                           </div>
                         )
@@ -380,7 +380,7 @@ export default function () {
                                       <div
                                         classList={{ "w-full flex items-center justify-center pb-8 shrink-0": true }}
                                       >
-                                        <Logo class="w-58.5 opacity-12" />
+                                        <Logo class="w-58.5" />
                                       </div>
                                     </SessionTurn>
                                   </div>
