@@ -10,6 +10,20 @@ import { useLanguage } from "@/context/language"
 import { useModels } from "@/context/models"
 import { popularProviders } from "@/hooks/use-providers"
 
+const getModelTier = (providerID: string, cost: { input: number } | undefined): string => {
+  // For blackbox-ai provider, use "Free" and "Pro"
+  if (providerID === "blackbox-ai") {
+    return !cost || cost.input === 0 ? "Free" : "Pro"
+  }
+  // For other providers, use "Free" and "Paid"
+  return !cost || cost.input === 0 ? "Free" : "Paid"
+}
+
+const getGroupKey = (model: any): string => {
+  const tier = getModelTier(model.provider.id, model.cost)
+  return `${model.provider.name}|${tier}`
+}
+
 type ModelItem = ReturnType<ReturnType<typeof useModels>["list"]>[number]
 
 const ListLoadingState: Component<{ label: string }> = (props) => {
@@ -40,8 +54,15 @@ export const SettingsModels: Component = () => {
     key: (x) => `${x.provider.id}:${x.id}`,
     filterKeys: ["provider.name", "name", "id"],
     sortBy: (a, b) => a.name.localeCompare(b.name),
-    groupBy: (x) => x.provider.id,
+    groupBy: getGroupKey,
     sortGroupsBy: (a, b) => {
+      // First, sort by Free vs Paid/Pro - Free should come first
+      const aIsFree = a.category.includes("|Free")
+      const bIsFree = b.category.includes("|Free")
+      if (aIsFree && !bIsFree) return -1
+      if (!aIsFree && bIsFree) return 1
+      
+      // Then sort by popular providers
       const aIndex = popularProviders.indexOf(a.category)
       const bIndex = popularProviders.indexOf(b.category)
       const aPopular = aIndex >= 0
@@ -95,11 +116,19 @@ export const SettingsModels: Component = () => {
             fallback={<ListEmptyState message={language.t("dialog.model.empty")} filter={list.filter()} />}
           >
             <For each={list.grouped.latest}>
-              {(group) => (
+              {(group) => {
+                // Extract provider name and tier from the group key (format: "ProviderName|Tier")
+                const [providerName, tier] = group.category.split("|")
+                return (
                 <div class="flex flex-col gap-1">
                   <div class="flex items-center gap-2 pb-2">
-                    <ProviderIcon id={group.category as IconName} class="size-5 shrink-0 icon-strong-base" />
-                    <span class="text-14-medium text-text-strong">{group.items[0].provider.name}</span>
+                    <ProviderIcon id={group.items[0].provider.id as IconName} class="size-5 shrink-0 icon-strong-base" />
+                    <span class="text-14-medium text-text-strong">{providerName} -</span>
+                    <Show when={tier}>
+                      <span class={`text-12-medium py-0.5 rounded-full ${tier === "Free" || tier === "Pro" ? "bg-green-500/20 text-green-400" : "bg-blue-500/20 text-blue-400"}`}>
+                        {tier}
+                      </span>
+                    </Show>
                   </div>
                   <div class="bg-surface-raised-base px-4 rounded-lg">
                     <For each={group.items}>
@@ -127,7 +156,7 @@ export const SettingsModels: Component = () => {
                     </For>
                   </div>
                 </div>
-              )}
+              )}}
             </For>
           </Show>
         </Show>

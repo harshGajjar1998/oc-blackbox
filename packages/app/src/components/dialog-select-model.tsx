@@ -18,6 +18,20 @@ import { useLanguage } from "@/context/language"
 const isFree = (provider: string, cost: { input: number } | undefined) =>
   provider === "opencode" && (!cost || cost.input === 0)
 
+const getModelTier = (providerID: string, cost: { input: number } | undefined): string => {
+  // For blackbox-ai provider, use "Free" and "Pro"
+  if (providerID === "blackbox-ai" || providerID === "opencode") {
+    return !cost || cost.input === 0 ? "Free" : "Pro"
+  }
+  // For other providers, use "Free" and "Paid"
+  return !cost || cost.input === 0 ? "Free" : "Paid"
+}
+
+const getGroupKey = (model: any): string => {
+  const tier = getModelTier(model.provider.id, model.cost)
+  return `${model.provider.name}|${tier}`
+}
+
 const ModelList: Component<{
   provider?: string
   class?: string
@@ -44,8 +58,15 @@ const ModelList: Component<{
       current={local.model.current()}
       filterKeys={["provider.name", "name", "id"]}
       sortBy={(a, b) => a.name.localeCompare(b.name)}
-      groupBy={(x) => x.provider.name}
+      groupBy={getGroupKey}
       sortGroupsBy={(a, b) => {
+        // First, sort by Free vs Paid/Pro - Free should come first
+        const aIsFree = a.category.includes("|Free")
+        const bIsFree = b.category.includes("|Free")
+        if (aIsFree && !bIsFree) return -1
+        if (!aIsFree && bIsFree) return 1
+        
+        // Then sort by popular providers
         const aProvider = a.items[0].provider.id
         const bProvider = b.items[0].provider.id
         if (popularProviders.includes(aProvider) && !popularProviders.includes(bProvider)) return -1
