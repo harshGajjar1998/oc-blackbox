@@ -292,7 +292,7 @@ export const dict = {
   "dialog.mcp.empty": "No MCPs configured",
 
   "dialog.lsp.empty": "LSPs auto-detected from file types",
-  "dialog.plugins.empty": "Plugins configured in opencode.json",
+  "dialog.plugins.empty": "Plugins configured in blackbox.json",
 
   "mcp.status.connected": "connected",
   "mcp.status.failed": "failed",
