@@ -25,6 +25,12 @@ target
 .scripts
 .direnv/
 
+# Desktop build outputs (Tauri/Rust)
+packages/desktop/src-tauri/target/
+packages/desktop/src-tauri/target/**/*.exe
+packages/desktop/src-tauri/target/**/*.msi
+packages/desktop/src-tauri/target/**/*.zip
+
 # Local dev files
 opencode-dev
 logs/

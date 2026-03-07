@@ -1,0 +1,11 @@
+[2026-03-07T20:57:46.427Z] Error: EBUSY: resource busy or locked, rename 'C:\Users\Pavitra\Desktop\sandbox\oc-blackbox\packages\sdk\js\src\v2\gen\client\types.ts' -> 'C:\Users\Pavitra\Desktop\sandbox\oc-blackbox\packages\sdk\js\src\v2\gen\client\types.gen.ts'
+Stack:
+Error: EBUSY: resource busy or locked, rename 'C:\Users\Pavitra\Desktop\sandbox\oc-blackbox\packages\sdk\js\src\v2\gen\client\types.ts' -> 'C:\Users\Pavitra\Desktop\sandbox\oc-blackbox\packages\sdk\js\src\v2\gen\client\types.gen.ts'
+    at renameSync (unknown)
+    at renameFile (C:\Users\Pavitra\Desktop\sandbox\oc-blackbox\node_modules\.bun\@hey-api+openapi-ts@0.90.10+9d615e7f35ecb182\node_modules\@hey-api\openapi-ts\dist\openApi-Gs-XGatv.mjs:6662:6)
+    at generateClientBundle (C:\Users\Pavitra\Desktop\sandbox\oc-blackbox\node_modules\.bun\@hey-api+openapi-ts@0.90.10+9d615e7f35ecb182\node_modules\@hey-api\openapi-ts\dist\openApi-Gs-XGatv.mjs:6702:42)
+    at <anonymous> (C:\Users\Pavitra\Desktop\sandbox\oc-blackbox\node_modules\.bun\@hey-api+openapi-ts@0.90.10+9d615e7f35ecb182\node_modules\@hey-api\openapi-ts\dist\src-YIQMkx2V.mjs:52:131)
+    at <anonymous> (C:\Users\Pavitra\Desktop\sandbox\oc-blackbox\node_modules\.bun\@hey-api+openapi-ts@0.90.10+9d615e7f35ecb182\node_modules\@hey-api\openapi-ts\dist\src-YIQMkx2V.mjs:299:9)
+    at async <anonymous> (C:\Users\Pavitra\Desktop\sandbox\oc-blackbox\node_modules\.bun\@hey-api+openapi-ts@0.90.10+9d615e7f35ecb182\node_modules\@hey-api\openapi-ts\dist\src-YIQMkx2V.mjs:397:18)
+    at async createClient (C:\Users\Pavitra\Desktop\sandbox\oc-blackbox\node_modules\.bun\@hey-api+openapi-ts@0.90.10+9d615e7f35ecb182\node_modules\@hey-api\openapi-ts\dist\src-YIQMkx2V.mjs:395:35)
+    at processTicksAndRejections (native:7:39)
