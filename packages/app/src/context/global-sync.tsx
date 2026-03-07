@@ -1,4 +1,4 @@
-import type {
+﻿import type {
   Config,
   OpencodeClient,
   Path,
@@ -6,9 +6,9 @@ import type {
   ProviderAuthResponse,
   ProviderListResponse,
   Todo,
-} from "@opencode-ai/sdk/v2/client"
-import { showToast } from "@opencode-ai/ui/toast"
-import { getFilename } from "@opencode-ai/util/path"
+} from "@blackbox-ai/sdk/v2/client"
+import { showToast } from "@blackbox-ai/ui/toast"
+import { getFilename } from "@blackbox-ai/util/path"
 import {
   createContext,
   createEffect,

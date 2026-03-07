@@ -1,10 +1,10 @@
-import { Show, createMemo } from "solid-js"
+﻿import { Show, createMemo } from "solid-js"
 import { DateTime } from "luxon"
 import { useSync } from "@/context/sync"
 import { useSDK } from "@/context/sdk"
 import { useLanguage } from "@/context/language"
-import { Icon } from "@opencode-ai/ui/icon"
-import { getDirectory, getFilename } from "@opencode-ai/util/path"
+import { Icon } from "@blackbox-ai/ui/icon"
+import { getDirectory, getFilename } from "@blackbox-ai/util/path"
 
 const MAIN_WORKTREE = "main"
 const CREATE_WORKTREE = "create"

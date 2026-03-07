@@ -1,4 +1,4 @@
-import type {
+﻿import type {
   Agent,
   Command,
   Config,
@@ -16,7 +16,7 @@ import type {
   SessionStatus,
   Todo,
   VcsInfo,
-} from "@opencode-ai/sdk/v2/client"
+} from "@blackbox-ai/sdk/v2/client"
 import type { Accessor } from "solid-js"
 import type { SetStoreFunction, Store } from "solid-js/store"
 

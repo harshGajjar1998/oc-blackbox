@@ -1,4 +1,4 @@
-import type { Hooks, PluginInput } from "@opencode-ai/plugin"
+import type { Hooks, PluginInput } from "@blackbox-ai/plugin"
 import { Installation } from "@/installation"
 import { iife } from "@/util/iife"
 

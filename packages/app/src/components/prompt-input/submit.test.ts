@@ -1,4 +1,4 @@
-import { beforeAll, beforeEach, describe, expect, mock, test } from "bun:test"
+﻿import { beforeAll, beforeEach, describe, expect, mock, test } from "bun:test"
 import type { Prompt } from "@/context/prompt"
 
 let createPromptSubmit: typeof import("./submit").createPromptSubmit
@@ -42,18 +42,18 @@ beforeAll(async () => {
     useParams: () => ({}),
   }))
 
-  mock.module("@opencode-ai/sdk/v2/client", () => ({
+  mock.module("@blackbox-ai/sdk/v2/client", () => ({
     createOpencodeClient: (input: { directory: string }) => {
       createdClients.push(input.directory)
       return clientFor(input.directory)
     },
   }))
 
-  mock.module("@opencode-ai/ui/toast", () => ({
+  mock.module("@blackbox-ai/ui/toast", () => ({
     showToast: () => 0,
   }))
 
-  mock.module("@opencode-ai/util/encode", () => ({
+  mock.module("@blackbox-ai/util/encode", () => ({
     base64Encode: (value: string) => value,
   }))
 

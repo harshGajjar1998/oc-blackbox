@@ -1,4 +1,4 @@
-// @refresh reload
+﻿// @refresh reload
 
 import {
   AppBaseProviders,
@@ -8,8 +8,8 @@ import {
   PlatformProvider,
   ServerConnection,
   useCommand,
-} from "@opencode-ai/app"
-import { Splash } from "@opencode-ai/ui/logo"
+} from "@blackbox-ai/app"
+import { Splash } from "@blackbox-ai/ui/logo"
 import type { AsyncStorage } from "@solid-primitives/storage"
 import { getCurrentWindow } from "@tauri-apps/api/window"
 import { readImage } from "@tauri-apps/plugin-clipboard-manager"

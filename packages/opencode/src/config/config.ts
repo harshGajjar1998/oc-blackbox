@@ -10,7 +10,7 @@ import { mergeDeep, pipe, unique } from "remeda"
 import { Global } from "../global"
 import fs from "fs/promises"
 import { lazy } from "../util/lazy"
-import { NamedError } from "@opencode-ai/util/error"
+import { NamedError } from "@blackbox-ai/util/error"
 import { Flag } from "../flag/flag"
 import { Auth } from "../auth"
 import {
@@ -267,16 +267,25 @@ export namespace Config {
 
   export async function installDependencies(dir: string) {
     const pkg = path.join(dir, "package.json")
-    const targetVersion = Installation.isLocal() ? "*" : Installation.VERSION
 
     const json = await Filesystem.readJson<{ dependencies?: Record<string, string> }>(pkg).catch(() => ({
       dependencies: {},
     }))
-    json.dependencies = {
-      ...json.dependencies,
-      "@opencode-ai/plugin": targetVersion,
+
+    // In local dev mode, @blackbox-ai/plugin is available via the workspace node_modules
+    // (resolved by Bun walking up the directory tree). Skip adding it here to avoid
+    // a failed `bun install` against npm where the package isn't published yet.
+    if (!Installation.isLocal()) {
+      json.dependencies = {
+        ...json.dependencies,
+        "@blackbox-ai/plugin": Installation.VERSION,
+      }
+      await Filesystem.writeJson(pkg, json)
+    } else {
+      // In local mode, only proceed if there are custom deps beyond @blackbox-ai/plugin
+      const customDeps = Object.keys(json.dependencies ?? {}).filter((k) => k !== "@blackbox-ai/plugin")
+      if (customDeps.length === 0) return
     }
-    await Filesystem.writeJson(pkg, json)
 
     const gitignore = path.join(dir, ".gitignore")
     const hasGitIgnore = await Filesystem.exists(gitignore)
@@ -315,24 +324,35 @@ export namespace Config {
       return false
     }
 
+    const pkg = path.join(dir, "package.json")
+    const pkgExists = await Filesystem.exists(pkg)
+
+    // In local dev mode, @blackbox-ai/plugin is resolved via workspace node_modules.
+    // Only trigger install if there are custom dependencies beyond @blackbox-ai/plugin.
+    if (Installation.isLocal()) {
+      if (!pkgExists) return false
+      const parsed = await Filesystem.readJson<{ dependencies?: Record<string, string> }>(pkg).catch(() => null)
+      const customDeps = Object.keys(parsed?.dependencies ?? {}).filter((k) => k !== "@blackbox-ai/plugin")
+      if (customDeps.length === 0) return false
+      return !existsSync(path.join(dir, "node_modules"))
+    }
+
     const nodeModules = path.join(dir, "node_modules")
     if (!existsSync(nodeModules)) return true
 
-    const pkg = path.join(dir, "package.json")
-    const pkgExists = await Filesystem.exists(pkg)
     if (!pkgExists) return true
 
     const parsed = await Filesystem.readJson<{ dependencies?: Record<string, string> }>(pkg).catch(() => null)
     const dependencies = parsed?.dependencies ?? {}
-    const depVersion = dependencies["@opencode-ai/plugin"]
+    const depVersion = dependencies["@blackbox-ai/plugin"]
     if (!depVersion) return true
 
-    const targetVersion = Installation.isLocal() ? "latest" : Installation.VERSION
-    if (targetVersion === "latest") {
-      const isOutdated = await PackageRegistry.isOutdated("@opencode-ai/plugin", depVersion, dir)
+    const targetVersion = Installation.VERSION
+    if (targetVersion === "local") {
+      const isOutdated = await PackageRegistry.isOutdated("@blackbox-ai/plugin", depVersion, dir)
       if (!isOutdated) return false
       log.info("Cached version is outdated, proceeding with install", {
-        pkg: "@opencode-ai/plugin",
+        pkg: "@blackbox-ai/plugin",
         cachedVersion: depVersion,
       })
       return true

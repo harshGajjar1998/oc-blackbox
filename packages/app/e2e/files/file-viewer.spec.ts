@@ -1,4 +1,4 @@
-import { test, expect } from "../fixtures"
+﻿import { test, expect } from "../fixtures"
 import { promptSelector } from "../selectors"
 
 test("smoke file viewer renders real file content", async ({ page, gotoSession }) => {
@@ -45,5 +45,5 @@ test("smoke file viewer renders real file content", async ({ page, gotoSession }
 
   const code = page.locator('[data-component="code"]').first()
   await expect(code).toBeVisible()
-  await expect(code.getByText(/"name"\s*:\s*"@opencode-ai\/app"/)).toBeVisible()
+  await expect(code.getByText(/"name"\s*:\s*"@blackbox-ai\/app"/)).toBeVisible()
 })

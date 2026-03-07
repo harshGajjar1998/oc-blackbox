@@ -1,4 +1,4 @@
-import type {
+﻿import type {
   Message,
   Session,
   Part,
@@ -8,7 +8,7 @@ import type {
   QuestionRequest,
   QuestionAnswer,
   ProviderListResponse,
-} from "@opencode-ai/sdk/v2"
+} from "@blackbox-ai/sdk/v2"
 import { createSimpleContext } from "./helper"
 import { PreloadMultiFileDiffResult } from "@pierre/diffs/ssr"
 

@@ -1,7 +1,7 @@
-import { createSignal } from "solid-js"
-import { Dialog } from "@opencode-ai/ui/dialog"
-import { Button } from "@opencode-ai/ui/button"
-import { useDialog } from "@opencode-ai/ui/context/dialog"
+﻿import { createSignal } from "solid-js"
+import { Dialog } from "@blackbox-ai/ui/dialog"
+import { Button } from "@blackbox-ai/ui/button"
+import { useDialog } from "@blackbox-ai/ui/context/dialog"
 import { useSettings } from "@/context/settings"
 
 export type Highlight = {

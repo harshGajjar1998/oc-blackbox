@@ -1,5 +1,5 @@
-import { Component, For, Show } from "solid-js"
-import { Icon } from "@opencode-ai/ui/icon"
+﻿import { Component, For, Show } from "solid-js"
+import { Icon } from "@blackbox-ai/ui/icon"
 import type { ImageAttachmentPart } from "@/context/prompt"
 
 type PromptImageAttachmentsProps = {

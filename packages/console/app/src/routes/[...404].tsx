@@ -1,42 +1,40 @@
-import "./[...404].css"
-import { Title } from "@solidjs/meta"
-import { HttpStatusCode } from "@solidjs/start"
-import logoLight from "../asset/logo-ornate-light.svg"
-import logoDark from "../asset/logo-ornate-dark.svg"
-import { useI18n } from "~/context/i18n"
+﻿import { query, createAsync, RouteSectionProps, useParams, A } from "@solidjs/router"
+import "./workspace.css"
+import { IconWorkspaceLogo } from "../component/icon"
+import { WorkspacePicker } from "./workspace-picker"
+import { UserMenu } from "./user-menu"
+import { withActor } from "~/context/auth.withActor"
+import { User } from "@blackbox-ai/console-core/user.js"
+import { Actor } from "@blackbox-ai/console-core/actor.js"
 import { useLanguage } from "~/context/language"
 
-export default function NotFound() {
-  const i18n = useI18n()
-  const language = useLanguage()
-  return (
-    <main data-page="not-found">
-      <Title>{i18n.t("notFound.title")}</Title>
-      <HttpStatusCode code={404} />
-      <div data-component="content">
-        <section data-component="top">
-          <a href={language.route("/")} data-slot="logo-link">
-            <img data-slot="logo light" src={logoLight} alt="opencode logo light" />
-            <img data-slot="logo dark" src={logoDark} alt="opencode logo dark" />
-          </a>
-          <h1 data-slot="title">{i18n.t("notFound.heading")}</h1>
-        </section>
+const getUserEmail = query(async (workspaceID: string) => {
+  "use server"
+  return withActor(async () => {
+    const actor = Actor.assert("user")
+    const email = await User.getAuthEmail(actor.properties.userID)
+    return email
+  }, workspaceID)
+}, "userEmail")
 
-        <section data-component="actions">
-          <div data-slot="action">
-            <a href={language.route("/")}>{i18n.t("notFound.home")}</a>
-          </div>
-          <div data-slot="action">
-            <a href={language.route("/docs")}>{i18n.t("notFound.docs")}</a>
-          </div>
-          <div data-slot="action">
-            <a href="https://github.com/anomalyco/opencode">{i18n.t("notFound.github")}</a>
-          </div>
-          <div data-slot="action">
-            <a href={language.route("/discord")}>{i18n.t("notFound.discord")}</a>
-          </div>
-        </section>
-      </div>
+export default function WorkspaceLayout(props: RouteSectionProps) {
+  const params = useParams()
+  const language = useLanguage()
+  const userEmail = createAsync(() => getUserEmail(params.id!))
+  return (
+    <main data-page="workspace">
+      <header data-component="workspace-header">
+        <div data-slot="header-brand">
+          <A href={language.route("/")} data-component="site-title">
+            <IconWorkspaceLogo />
+          </A>
+          <WorkspacePicker />
+        </div>
+        <div data-slot="header-actions">
+          <UserMenu email={userEmail()} />
+        </div>
+      </header>
+      <div>{props.children}</div>
     </main>
   )
 }

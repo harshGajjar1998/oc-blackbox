@@ -1,68 +1,122 @@
-import { Show } from "solid-js"
-import { createAsync, RouteSectionProps, useParams, A } from "@solidjs/router"
-import { querySessionInfo } from "./common"
-import "./[id].css"
-import { useI18n } from "~/context/i18n"
-import { Legal } from "~/component/legal"
+﻿import { Resource } from "@blackbox-ai/console-resource"
+import { Actor } from "@blackbox-ai/console-core/actor.js"
+import { action, json, query } from "@solidjs/router"
+import { withActor } from "~/context/auth.withActor"
+import { Billing } from "@blackbox-ai/console-core/billing.js"
+import { and, Database, desc, eq, isNull } from "@blackbox-ai/console-core/drizzle/index.js"
+import { WorkspaceTable } from "@blackbox-ai/console-core/schema/workspace.sql.js"
+import { UserTable } from "@blackbox-ai/console-core/schema/user.sql.js"
 
-export default function WorkspaceLayout(props: RouteSectionProps) {
-  const params = useParams()
-  const i18n = useI18n()
-  const userInfo = createAsync(() => querySessionInfo(params.id!))
-
-  return (
-    <main data-page="workspace">
-      <div data-component="workspace-container">
-        <nav data-component="workspace-nav">
-          <nav data-component="nav-desktop">
-            <div data-component="workspace-nav-items">
-              <A href={`/workspace/${params.id}`} end activeClass="active" data-nav-button>
-                {i18n.t("workspace.nav.zen")}
-              </A>
-              <A href={`/workspace/${params.id}/keys`} activeClass="active" data-nav-button>
-                {i18n.t("workspace.nav.apiKeys")}
-              </A>
-              <A href={`/workspace/${params.id}/members`} activeClass="active" data-nav-button>
-                {i18n.t("workspace.nav.members")}
-              </A>
-              <Show when={userInfo()?.isAdmin}>
-                <A href={`/workspace/${params.id}/billing`} activeClass="active" data-nav-button>
-                  {i18n.t("workspace.nav.billing")}
-                </A>
-                <A href={`/workspace/${params.id}/settings`} activeClass="active" data-nav-button>
-                  {i18n.t("workspace.nav.settings")}
-                </A>
-              </Show>
-            </div>
-          </nav>
-
-          <nav data-component="nav-mobile">
-            <div data-component="workspace-nav-items">
-              <A href={`/workspace/${params.id}`} end activeClass="active" data-nav-button>
-                {i18n.t("workspace.nav.zen")}
-              </A>
-              <A href={`/workspace/${params.id}/keys`} activeClass="active" data-nav-button>
-                {i18n.t("workspace.nav.apiKeys")}
-              </A>
-              <A href={`/workspace/${params.id}/members`} activeClass="active" data-nav-button>
-                {i18n.t("workspace.nav.members")}
-              </A>
-              <Show when={userInfo()?.isAdmin}>
-                <A href={`/workspace/${params.id}/billing`} activeClass="active" data-nav-button>
-                  {i18n.t("workspace.nav.billing")}
-                </A>
-                <A href={`/workspace/${params.id}/settings`} activeClass="active" data-nav-button>
-                  {i18n.t("workspace.nav.settings")}
-                </A>
-              </Show>
-            </div>
-          </nav>
-        </nav>
-        <div data-component="workspace-content">
-          <div data-component="workspace-main">{props.children}</div>
-          <Legal />
-        </div>
-      </div>
-    </main>
-  )
+export function formatDateForTable(date: Date) {
+  const options: Intl.DateTimeFormatOptions = {
+    day: "numeric",
+    month: "short",
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true,
+  }
+  return date.toLocaleDateString(undefined, options).replace(",", ",")
 }
+
+export function formatDateUTC(date: Date) {
+  const options: Intl.DateTimeFormatOptions = {
+    weekday: "short",
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+    second: "2-digit",
+    timeZoneName: "short",
+    timeZone: "UTC",
+  }
+  return date.toLocaleDateString(undefined, options)
+}
+
+export function formatBalance(amount: number) {
+  const balance = ((amount ?? 0) / 100000000).toFixed(2)
+  return balance === "-0.00" ? "0.00" : balance
+}
+
+export async function getLastSeenWorkspaceID() {
+  "use server"
+  return withActor(async () => {
+    const actor = Actor.assert("account")
+    return Database.use(async (tx) =>
+      tx
+        .select({ id: WorkspaceTable.id })
+        .from(UserTable)
+        .innerJoin(WorkspaceTable, eq(UserTable.workspaceID, WorkspaceTable.id))
+        .where(
+          and(
+            eq(UserTable.accountID, actor.properties.accountID),
+            isNull(UserTable.timeDeleted),
+            isNull(WorkspaceTable.timeDeleted),
+          ),
+        )
+        .orderBy(desc(UserTable.timeSeen))
+        .limit(1)
+        .then((x) => x[0]?.id),
+    )
+  })
+}
+
+export const querySessionInfo = query(async (workspaceID: string) => {
+  "use server"
+  return withActor(() => {
+    return {
+      isAdmin: Actor.userRole() === "admin",
+      isBeta: Resource.App.stage === "production" ? workspaceID === "wrk_01K46JDFR0E75SG2Q8K172KF3Y" : true,
+    }
+  }, workspaceID)
+}, "session.get")
+
+export const createCheckoutUrl = action(
+  async (workspaceID: string, amount: number, successUrl: string, cancelUrl: string) => {
+    "use server"
+    return json(
+      await withActor(
+        () =>
+          Billing.generateCheckoutUrl({ amount, successUrl, cancelUrl })
+            .then((data) => ({ error: undefined, data }))
+            .catch((e) => ({
+              error: e.message as string,
+              data: undefined,
+            })),
+        workspaceID,
+      ),
+    )
+  },
+  "checkoutUrl",
+)
+
+export const queryBillingInfo = query(async (workspaceID: string) => {
+  "use server"
+  return withActor(async () => {
+    const billing = await Billing.get()
+    return {
+      customerID: billing.customerID,
+      paymentMethodID: billing.paymentMethodID,
+      paymentMethodType: billing.paymentMethodType,
+      paymentMethodLast4: billing.paymentMethodLast4,
+      balance: billing.balance,
+      reload: billing.reload,
+      reloadAmount: billing.reloadAmount ?? Billing.RELOAD_AMOUNT,
+      reloadAmountMin: Billing.RELOAD_AMOUNT_MIN,
+      reloadTrigger: billing.reloadTrigger ?? Billing.RELOAD_TRIGGER,
+      reloadTriggerMin: Billing.RELOAD_TRIGGER_MIN,
+      monthlyLimit: billing.monthlyLimit,
+      monthlyUsage: billing.monthlyUsage,
+      timeMonthlyUsageUpdated: billing.timeMonthlyUsageUpdated,
+      reloadError: billing.reloadError,
+      timeReloadError: billing.timeReloadError,
+      subscription: billing.subscription,
+      subscriptionID: billing.subscriptionID,
+      subscriptionPlan: billing.subscriptionPlan,
+      timeSubscriptionBooked: billing.timeSubscriptionBooked,
+      timeSubscriptionSelected: billing.timeSubscriptionSelected,
+      lite: billing.lite,
+      liteSubscriptionID: billing.liteSubscriptionID,
+    }
+  }, workspaceID)
+}, "billing.get")

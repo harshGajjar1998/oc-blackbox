@@ -1,368 +1,368 @@
-import { json, query, action, useParams, createAsync, useSubmission } from "@solidjs/router"
-import { createEffect, For, Show } from "solid-js"
-import { withActor } from "~/context/auth.withActor"
-import { createStore } from "solid-js/store"
-import styles from "./member-section.module.css"
-import { UserRole } from "@opencode-ai/console-core/schema/user.sql.js"
-import { Actor } from "@opencode-ai/console-core/actor.js"
-import { User } from "@opencode-ai/console-core/user.js"
-import { RoleDropdown } from "./role-dropdown"
-import { useI18n } from "~/context/i18n"
-import { useLanguage } from "~/context/language"
-import { formError, localizeError } from "~/lib/form-error"
+﻿import { Billing } from "@blackbox-ai/console-core/billing.js"
+import type { APIEvent } from "@solidjs/start/server"
+import { and, Database, eq, sql } from "@blackbox-ai/console-core/drizzle/index.js"
+import { BillingTable, LiteTable, PaymentTable } from "@blackbox-ai/console-core/schema/billing.sql.js"
+import { Identifier } from "@blackbox-ai/console-core/identifier.js"
+import { centsToMicroCents } from "@blackbox-ai/console-core/util/price.js"
+import { Actor } from "@blackbox-ai/console-core/actor.js"
+import { Resource } from "@blackbox-ai/console-resource"
+import { LiteData } from "@blackbox-ai/console-core/lite.js"
+import { BlackData } from "@blackbox-ai/console-core/black.js"
 
-const listMembers = query(async (workspaceID: string) => {
-  "use server"
-  return withActor(async () => {
-    return {
-      members: await User.list(),
-      actorID: Actor.userID(),
-      actorRole: Actor.userRole(),
-    }
-  }, workspaceID)
-}, "member.list")
-
-const inviteMember = action(async (form: FormData) => {
-  "use server"
-  const email = form.get("email")?.toString().trim()
-  if (!email) return { error: formError.emailRequired }
-  const workspaceID = form.get("workspaceID")?.toString()
-  if (!workspaceID) return { error: formError.workspaceRequired }
-  const role = form.get("role")?.toString() as (typeof UserRole)[number]
-  if (!role) return { error: formError.roleRequired }
-  const limit = form.get("limit")?.toString()
-  const monthlyLimit = limit && limit.trim() !== "" ? parseInt(limit) : null
-  if (monthlyLimit !== null && monthlyLimit < 0) return { error: formError.monthlyLimitInvalid }
-  return json(
-    await withActor(
-      () =>
-        User.invite({ email, role, monthlyLimit })
-          .then((data) => ({ error: undefined, data }))
-          .catch((e) => ({ error: e.message as string })),
-      workspaceID,
-    ),
-    { revalidate: listMembers.key },
+export async function POST(input: APIEvent) {
+  const body = await Billing.stripe().webhooks.constructEventAsync(
+    await input.request.text(),
+    input.request.headers.get("stripe-signature")!,
+    Resource.STRIPE_WEBHOOK_SECRET.value,
   )
-}, "member.create")
+  console.log(body.type, JSON.stringify(body, null, 2))
 
-const removeMember = action(async (form: FormData) => {
-  "use server"
-  const id = form.get("id")?.toString()
-  if (!id) return { error: formError.idRequired }
-  const workspaceID = form.get("workspaceID")?.toString()
-  if (!workspaceID) return { error: formError.workspaceRequired }
-  return json(
-    await withActor(
-      () =>
-        User.remove(id)
-          .then((data) => ({ error: undefined, data }))
-          .catch((e) => ({ error: e.message as string })),
-      workspaceID,
-    ),
-    { revalidate: listMembers.key },
-  )
-}, "member.remove")
+  return (async () => {
+    if (body.type === "customer.updated") {
+      // check default payment method changed
+      const prevInvoiceSettings = body.data.previous_attributes?.invoice_settings ?? {}
+      if (!("default_payment_method" in prevInvoiceSettings)) return "ignored"
 
-const updateMember = action(async (form: FormData) => {
-  "use server"
+      const customerID = body.data.object.id
+      const paymentMethodID = body.data.object.invoice_settings.default_payment_method as string
 
-  const id = form.get("id")?.toString()
-  if (!id) return { error: formError.idRequired }
-  const workspaceID = form.get("workspaceID")?.toString()
-  if (!workspaceID) return { error: formError.workspaceRequired }
-  const role = form.get("role")?.toString() as (typeof UserRole)[number]
-  if (!role) return { error: formError.roleRequired }
-  const limit = form.get("limit")?.toString()
-  const monthlyLimit = limit && limit.trim() !== "" ? parseInt(limit) : null
-  if (monthlyLimit !== null && monthlyLimit < 0) return { error: formError.monthlyLimitInvalid }
+      if (!customerID) throw new Error("Customer ID not found")
+      if (!paymentMethodID) throw new Error("Payment method ID not found")
 
-  return json(
-    await withActor(
-      () =>
-        User.update({ id, role, monthlyLimit })
-          .then((data) => ({ error: undefined, data }))
-          .catch((e) => ({ error: e.message as string })),
-      workspaceID,
-    ),
-    { revalidate: listMembers.key },
-  )
-}, "member.update")
-
-function MemberRow(props: {
-  member: any
-  workspaceID: string
-  actorID: string
-  actorRole: string
-  roleOptions: { value: string; label: string; description: string }[]
-}) {
-  const i18n = useI18n()
-  const submission = useSubmission(updateMember)
-  const isCurrentUser = () => props.actorID === props.member.id
-  const isAdmin = () => props.actorRole === "admin"
-  const [store, setStore] = createStore({
-    editing: false,
-    selectedRole: props.member.role as (typeof UserRole)[number],
-    limit: "",
-  })
-
-  createEffect(() => {
-    if (!submission.pending && submission.result && !submission.result.error) {
-      setStore("editing", false)
-    }
-  })
-
-  function show() {
-    while (true) {
-      submission.clear()
-      if (!submission.result) break
-    }
-    setStore("editing", true)
-    setStore("selectedRole", props.member.role)
-    setStore("limit", props.member.monthlyLimit?.toString() ?? "")
-  }
-
-  function hide() {
-    setStore("editing", false)
-  }
-
-  function getUsageDisplay() {
-    const currentUsage = (() => {
-      const dateLastUsed = props.member.timeMonthlyUsageUpdated
-      if (!dateLastUsed) return 0
-
-      const current = new Date().toLocaleDateString(undefined, {
-        year: "numeric",
-        month: "long",
-        timeZone: "UTC",
+      const paymentMethod = await Billing.stripe().paymentMethods.retrieve(paymentMethodID)
+      await Database.use(async (tx) => {
+        await tx
+          .update(BillingTable)
+          .set({
+            paymentMethodID,
+            paymentMethodLast4: paymentMethod.card?.last4 ?? null,
+            paymentMethodType: paymentMethod.type,
+          })
+          .where(eq(BillingTable.customerID, customerID))
       })
-      const lastUsed = dateLastUsed.toLocaleDateString(undefined, {
-        year: "numeric",
-        month: "long",
-        timeZone: "UTC",
+    }
+    if (body.type === "checkout.session.completed" && body.data.object.mode === "payment") {
+      const workspaceID = body.data.object.metadata?.workspaceID
+      const amountInCents = body.data.object.metadata?.amount && parseInt(body.data.object.metadata?.amount)
+      const customerID = body.data.object.customer as string
+      const paymentID = body.data.object.payment_intent as string
+      const invoiceID = body.data.object.invoice as string
+
+      if (!workspaceID) throw new Error("Workspace ID not found")
+      if (!customerID) throw new Error("Customer ID not found")
+      if (!amountInCents) throw new Error("Amount not found")
+      if (!paymentID) throw new Error("Payment ID not found")
+      if (!invoiceID) throw new Error("Invoice ID not found")
+
+      await Actor.provide("system", { workspaceID }, async () => {
+        const customer = await Billing.get()
+        if (customer?.customerID && customer.customerID !== customerID) throw new Error("Customer ID mismatch")
+
+        // set customer metadata
+        if (!customer?.customerID) {
+          await Billing.stripe().customers.update(customerID, {
+            metadata: {
+              workspaceID,
+            },
+          })
+        }
+
+        // get payment method for the payment intent
+        const paymentIntent = await Billing.stripe().paymentIntents.retrieve(paymentID, {
+          expand: ["payment_method"],
+        })
+        const paymentMethod = paymentIntent.payment_method
+        if (!paymentMethod || typeof paymentMethod === "string") throw new Error("Payment method not expanded")
+
+        await Database.transaction(async (tx) => {
+          await tx
+            .update(BillingTable)
+            .set({
+              balance: sql`${BillingTable.balance} + ${centsToMicroCents(amountInCents)}`,
+              customerID,
+              paymentMethodID: paymentMethod.id,
+              paymentMethodLast4: paymentMethod.card?.last4 ?? null,
+              paymentMethodType: paymentMethod.type,
+              // enable reload if first time enabling billing
+              ...(customer?.customerID
+                ? {}
+                : {
+                    reloadError: null,
+                    timeReloadError: null,
+                  }),
+            })
+            .where(eq(BillingTable.workspaceID, workspaceID))
+          await tx.insert(PaymentTable).values({
+            workspaceID,
+            id: Identifier.create("payment"),
+            amount: centsToMicroCents(amountInCents),
+            paymentID,
+            invoiceID,
+            customerID,
+          })
+        })
       })
-      return current === lastUsed ? (props.member.monthlyUsage ?? 0) : 0
-    })()
-
-    const limit = props.member.monthlyLimit
-      ? `$${props.member.monthlyLimit}`
-      : i18n.t("workspace.members.noLimitLowercase")
-    return `$${(currentUsage / 100000000).toFixed(2)} / ${limit}`
-  }
-
-  const roleLabel = (value: string) => props.roleOptions.find((option) => option.value === value)?.label ?? value
-
-  return (
-    <tr>
-      <td data-slot="member-email">{props.member.authEmail ?? props.member.email}</td>
-      <td data-slot="member-role">
-        <Show when={store.editing && !isCurrentUser()} fallback={<span>{roleLabel(props.member.role)}</span>}>
-          <RoleDropdown
-            value={store.selectedRole}
-            options={props.roleOptions}
-            onChange={(value) => setStore("selectedRole", value as (typeof UserRole)[number])}
-          />
-        </Show>
-      </td>
-      <td data-slot="member-usage">
-        <Show when={store.editing} fallback={<span>{getUsageDisplay()}</span>}>
-          <input
-            data-component="input"
-            type="number"
-            value={store.limit}
-            onInput={(e) => setStore("limit", e.currentTarget.value)}
-            placeholder={i18n.t("workspace.members.noLimit")}
-            min="0"
-          />
-        </Show>
-      </td>
-      <td data-slot="member-joined">{props.member.timeSeen ? "" : i18n.t("workspace.members.invited")}</td>
-      <Show when={isAdmin()}>
-        <td data-slot="member-actions">
-          <Show
-            when={store.editing}
-            fallback={
-              <>
-                <button data-color="ghost" onClick={() => show()}>
-                  {i18n.t("workspace.members.edit")}
-                </button>
-                <Show when={!isCurrentUser()}>
-                  <form action={removeMember} method="post">
-                    <input type="hidden" name="id" value={props.member.id} />
-                    <input type="hidden" name="workspaceID" value={props.workspaceID} />
-                    <button data-color="ghost">{i18n.t("workspace.members.delete")}</button>
-                  </form>
-                </Show>
-              </>
-            }
-          >
-            <form action={updateMember} method="post" data-slot="inline-edit-form">
-              <input type="hidden" name="id" value={props.member.id} />
-              <input type="hidden" name="workspaceID" value={props.workspaceID} />
-              <input type="hidden" name="role" value={store.selectedRole} />
-              <input type="hidden" name="limit" value={store.limit} />
-              <button type="submit" data-color="ghost" disabled={submission.pending}>
-                {submission.pending ? i18n.t("workspace.members.saving") : i18n.t("workspace.members.save")}
-              </button>
-              <Show when={!submission.pending}>
-                <button type="button" data-color="ghost" onClick={() => hide()}>
-                  {i18n.t("common.cancel")}
-                </button>
-              </Show>
-            </form>
-          </Show>
-        </td>
-      </Show>
-    </tr>
-  )
-}
-
-export function MemberSection() {
-  const params = useParams()
-  const i18n = useI18n()
-  const language = useLanguage()
-  const data = createAsync(() => listMembers(params.id!))
-  const submission = useSubmission(inviteMember)
-  const [store, setStore] = createStore({
-    show: false,
-    selectedRole: "member" as (typeof UserRole)[number],
-    limit: "",
-  })
-
-  let input: HTMLInputElement
-
-  const roleOptions = [
-    {
-      value: "admin",
-      label: i18n.t("workspace.members.role.admin"),
-      description: i18n.t("workspace.members.role.adminDescription"),
-    },
-    {
-      value: "member",
-      label: i18n.t("workspace.members.role.member"),
-      description: i18n.t("workspace.members.role.memberDescription"),
-    },
-  ]
-
-  createEffect(() => {
-    if (!submission.pending && submission.result && !submission.result.error) {
-      setStore("show", false)
     }
-  })
+    if (body.type === "customer.subscription.created") {
+      const type = body.data.object.metadata?.type
+      if (type === "lite") {
+        const workspaceID = body.data.object.metadata?.workspaceID
+        const userID = body.data.object.metadata?.userID
+        const customerID = body.data.object.customer as string
+        const invoiceID = body.data.object.latest_invoice as string
+        const subscriptionID = body.data.object.id as string
 
-  function show() {
-    while (true) {
-      submission.clear()
-      if (!submission.result) break
+        if (!workspaceID) throw new Error("Workspace ID not found")
+        if (!userID) throw new Error("User ID not found")
+        if (!customerID) throw new Error("Customer ID not found")
+        if (!invoiceID) throw new Error("Invoice ID not found")
+        if (!subscriptionID) throw new Error("Subscription ID not found")
+
+        // get payment id from invoice
+        const invoice = await Billing.stripe().invoices.retrieve(invoiceID, {
+          expand: ["payments"],
+        })
+        const paymentID = invoice.payments?.data[0].payment.payment_intent as string
+        if (!paymentID) throw new Error("Payment ID not found")
+
+        // get payment method for the payment intent
+        const paymentIntent = await Billing.stripe().paymentIntents.retrieve(paymentID, {
+          expand: ["payment_method"],
+        })
+        const paymentMethod = paymentIntent.payment_method
+        if (!paymentMethod || typeof paymentMethod === "string") throw new Error("Payment method not expanded")
+
+        await Actor.provide("system", { workspaceID }, async () => {
+          // look up current billing
+          const billing = await Billing.get()
+          if (!billing) throw new Error(`Workspace with ID ${workspaceID} not found`)
+          if (billing.customerID && billing.customerID !== customerID) throw new Error("Customer ID mismatch")
+
+          // set customer metadata
+          if (!billing?.customerID) {
+            await Billing.stripe().customers.update(customerID, {
+              metadata: {
+                workspaceID,
+              },
+            })
+          }
+
+          await Database.transaction(async (tx) => {
+            await tx
+              .update(BillingTable)
+              .set({
+                customerID,
+                liteSubscriptionID: subscriptionID,
+                lite: {},
+                paymentMethodID: paymentMethod.id,
+                paymentMethodLast4: paymentMethod.card?.last4 ?? null,
+                paymentMethodType: paymentMethod.type,
+              })
+              .where(eq(BillingTable.workspaceID, workspaceID))
+
+            await tx.insert(LiteTable).values({
+              workspaceID,
+              id: Identifier.create("lite"),
+              userID: userID,
+            })
+          })
+        })
+      }
     }
-    setStore("show", true)
-    setStore("selectedRole", "member")
-    setStore("limit", "")
-    setTimeout(() => input?.focus(), 0)
-  }
+    if (body.type === "customer.subscription.updated" && body.data.object.status === "incomplete_expired") {
+      const subscriptionID = body.data.object.id
+      if (!subscriptionID) throw new Error("Subscription ID not found")
 
-  function hide() {
-    setStore("show", false)
-  }
+      const productID = body.data.object.items.data[0].price.product as string
+      if (productID === LiteData.productID()) {
+        await Billing.unsubscribeLite({ subscriptionID })
+      } else if (productID === BlackData.productID()) {
+        await Billing.unsubscribeBlack({ subscriptionID })
+      }
+    }
+    if (body.type === "customer.subscription.deleted") {
+      const subscriptionID = body.data.object.id
+      if (!subscriptionID) throw new Error("Subscription ID not found")
 
-  return (
-    <section class={styles.root}>
-      <div data-slot="section-title">
-        <h2>{i18n.t("workspace.members.title")}</h2>
-        <div data-slot="title-row">
-          <p>{i18n.t("workspace.members.subtitle")}</p>
-          <Show when={data()?.actorRole === "admin"}>
-            <button data-color="primary" onClick={() => show()}>
-              {i18n.t("workspace.members.invite")}
-            </button>
-          </Show>
-        </div>
-      </div>
-      <div data-slot="beta-notice">
-        {i18n.t("workspace.members.beta.beforeLink")}{" "}
-        <a href={language.route("/docs/zen/#for-teams")} target="_blank" rel="noopener noreferrer">
-          {i18n.t("common.learnMore")}
-        </a>
-        .
-      </div>
-      <Show when={store.show}>
-        <form action={inviteMember} method="post" data-slot="create-form">
-          <div data-slot="input-row">
-            <div data-slot="input-field">
-              <p>{i18n.t("workspace.members.form.invitee")}</p>
-              <input
-                ref={(r) => (input = r)}
-                data-component="input"
-                name="email"
-                type="text"
-                placeholder={i18n.t("workspace.members.form.emailPlaceholder")}
-              />
-            </div>
-            <div data-slot="input-field">
-              <p>{i18n.t("workspace.members.form.role")}</p>
-              <RoleDropdown
-                value={store.selectedRole}
-                options={roleOptions}
-                onChange={(value) => setStore("selectedRole", value as (typeof UserRole)[number])}
-              />
-            </div>
-            <div data-slot="input-field">
-              <p>{i18n.t("workspace.members.form.monthlyLimit")}</p>
-              <input
-                data-component="input"
-                name="limit"
-                type="number"
-                placeholder={i18n.t("workspace.members.noLimit")}
-                value={store.limit}
-                onInput={(e) => setStore("limit", e.currentTarget.value)}
-                min="0"
-              />
-            </div>
-          </div>
-          <Show when={submission.result && submission.result.error}>
-            {(err) => <div data-slot="form-error">{localizeError(i18n.t, err())}</div>}
-          </Show>
-          <input type="hidden" name="role" value={store.selectedRole} />
-          <input type="hidden" name="workspaceID" value={params.id} />
-          <div data-slot="form-actions">
-            <button type="reset" data-color="ghost" onClick={() => hide()}>
-              {i18n.t("common.cancel")}
-            </button>
-            <button type="submit" data-color="primary" disabled={submission.pending}>
-              {submission.pending ? i18n.t("workspace.members.inviting") : i18n.t("workspace.members.invite")}
-            </button>
-          </div>
-        </form>
-      </Show>
-      <div data-slot="members-table">
-        <table data-slot="members-table-element">
-          <thead>
-            <tr>
-              <th>{i18n.t("workspace.members.table.email")}</th>
-              <th>{i18n.t("workspace.members.table.role")}</th>
-              <th>{i18n.t("workspace.members.table.monthLimit")}</th>
-              <th></th>
-              <Show when={data()?.actorRole === "admin"}>
-                <th></th>
-              </Show>
-            </tr>
-          </thead>
-          <tbody>
-            <Show when={data() && data()!.members.length > 0}>
-              <For each={data()!.members}>
-                {(member) => (
-                  <MemberRow
-                    member={member}
-                    workspaceID={params.id!}
-                    actorID={data()!.actorID}
-                    actorRole={data()!.actorRole}
-                    roleOptions={roleOptions}
-                  />
-                )}
-              </For>
-            </Show>
-          </tbody>
-        </table>
-      </div>
-    </section>
-  )
+      const productID = body.data.object.items.data[0].price.product as string
+      if (productID === LiteData.productID()) {
+        await Billing.unsubscribeLite({ subscriptionID })
+      } else if (productID === BlackData.productID()) {
+        await Billing.unsubscribeBlack({ subscriptionID })
+      }
+    }
+    if (body.type === "invoice.payment_succeeded") {
+      if (
+        body.data.object.billing_reason === "subscription_create" ||
+        body.data.object.billing_reason === "subscription_cycle"
+      ) {
+        const invoiceID = body.data.object.id as string
+        const amountInCents = body.data.object.amount_paid
+        const customerID = body.data.object.customer as string
+        const subscriptionID = body.data.object.parent?.subscription_details?.subscription as string
+
+        if (!customerID) throw new Error("Customer ID not found")
+        if (!invoiceID) throw new Error("Invoice ID not found")
+        if (!subscriptionID) throw new Error("Subscription ID not found")
+
+        // get coupon id from subscription
+        const subscriptionData = await Billing.stripe().subscriptions.retrieve(subscriptionID, {
+          expand: ["discounts"],
+        })
+        const couponID =
+          typeof subscriptionData.discounts[0] === "string"
+            ? subscriptionData.discounts[0]
+            : subscriptionData.discounts[0]?.coupon?.id
+        const productID = subscriptionData.items.data[0].price.product as string
+
+        // get payment id from invoice
+        const invoice = await Billing.stripe().invoices.retrieve(invoiceID, {
+          expand: ["payments"],
+        })
+        const paymentID = invoice.payments?.data[0].payment.payment_intent as string
+        if (!paymentID) {
+          // payment id can be undefined when using coupon
+          if (!couponID) throw new Error("Payment ID not found")
+        }
+
+        const workspaceID = await Database.use((tx) =>
+          tx
+            .select({ workspaceID: BillingTable.workspaceID })
+            .from(BillingTable)
+            .where(eq(BillingTable.customerID, customerID))
+            .then((rows) => rows[0]?.workspaceID),
+        )
+        if (!workspaceID) throw new Error("Workspace ID not found for customer")
+
+        await Database.use((tx) =>
+          tx.insert(PaymentTable).values({
+            workspaceID,
+            id: Identifier.create("payment"),
+            amount: centsToMicroCents(amountInCents),
+            paymentID,
+            invoiceID,
+            customerID,
+            enrichment: {
+              type: productID === LiteData.productID() ? "lite" : "subscription",
+              couponID,
+            },
+          }),
+        )
+      } else if (body.data.object.billing_reason === "manual") {
+        const workspaceID = body.data.object.metadata?.workspaceID
+        const amountInCents = body.data.object.metadata?.amount && parseInt(body.data.object.metadata?.amount)
+        const invoiceID = body.data.object.id as string
+        const customerID = body.data.object.customer as string
+
+        if (!workspaceID) throw new Error("Workspace ID not found")
+        if (!customerID) throw new Error("Customer ID not found")
+        if (!amountInCents) throw new Error("Amount not found")
+        if (!invoiceID) throw new Error("Invoice ID not found")
+
+        await Actor.provide("system", { workspaceID }, async () => {
+          // get payment id from invoice
+          const invoice = await Billing.stripe().invoices.retrieve(invoiceID, {
+            expand: ["payments"],
+          })
+          await Database.transaction(async (tx) => {
+            await tx
+              .update(BillingTable)
+              .set({
+                balance: sql`${BillingTable.balance} + ${centsToMicroCents(amountInCents)}`,
+                reloadError: null,
+                timeReloadError: null,
+              })
+              .where(eq(BillingTable.workspaceID, Actor.workspace()))
+            await tx.insert(PaymentTable).values({
+              workspaceID: Actor.workspace(),
+              id: Identifier.create("payment"),
+              amount: centsToMicroCents(amountInCents),
+              invoiceID,
+              paymentID: invoice.payments?.data[0].payment.payment_intent as string,
+              customerID,
+            })
+          })
+        })
+      }
+    }
+    if (body.type === "invoice.payment_failed" || body.type === "invoice.payment_action_required") {
+      if (body.data.object.billing_reason === "manual") {
+        const workspaceID = body.data.object.metadata?.workspaceID
+        const invoiceID = body.data.object.id
+
+        if (!workspaceID) throw new Error("Workspace ID not found")
+        if (!invoiceID) throw new Error("Invoice ID not found")
+
+        const paymentIntent = await Billing.stripe().paymentIntents.retrieve(invoiceID)
+        console.log(JSON.stringify(paymentIntent))
+        const errorMessage =
+          typeof paymentIntent === "object" && paymentIntent !== null
+            ? paymentIntent.last_payment_error?.message
+            : undefined
+
+        await Actor.provide("system", { workspaceID }, async () => {
+          await Database.use((tx) =>
+            tx
+              .update(BillingTable)
+              .set({
+                reload: false,
+                reloadError: errorMessage ?? "Payment failed.",
+                timeReloadError: sql`now()`,
+              })
+              .where(eq(BillingTable.workspaceID, Actor.workspace())),
+          )
+        })
+      }
+    }
+    if (body.type === "charge.refunded") {
+      const customerID = body.data.object.customer as string
+      const paymentIntentID = body.data.object.payment_intent as string
+      if (!customerID) throw new Error("Customer ID not found")
+      if (!paymentIntentID) throw new Error("Payment ID not found")
+
+      const workspaceID = await Database.use((tx) =>
+        tx
+          .select({
+            workspaceID: BillingTable.workspaceID,
+          })
+          .from(BillingTable)
+          .where(eq(BillingTable.customerID, customerID))
+          .then((rows) => rows[0]?.workspaceID),
+      )
+      if (!workspaceID) throw new Error("Workspace ID not found")
+
+      const amount = await Database.use((tx) =>
+        tx
+          .select({
+            amount: PaymentTable.amount,
+          })
+          .from(PaymentTable)
+          .where(and(eq(PaymentTable.paymentID, paymentIntentID), eq(PaymentTable.workspaceID, workspaceID)))
+          .then((rows) => rows[0]?.amount),
+      )
+      if (!amount) throw new Error("Payment not found")
+
+      await Database.transaction(async (tx) => {
+        await tx
+          .update(PaymentTable)
+          .set({
+            timeRefunded: new Date(body.created * 1000),
+          })
+          .where(and(eq(PaymentTable.paymentID, paymentIntentID), eq(PaymentTable.workspaceID, workspaceID)))
+
+        await tx
+          .update(BillingTable)
+          .set({
+            balance: sql`${BillingTable.balance} - ${amount}`,
+          })
+          .where(eq(BillingTable.workspaceID, workspaceID))
+      })
+    }
+  })()
+    .then((message) => {
+      return Response.json({ message: message ?? "done" }, { status: 200 })
+    })
+    .catch((error: any) => {
+      return Response.json({ message: error.message }, { status: 500 })
+    })
 }

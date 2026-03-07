@@ -1,219 +1,368 @@
-import { json, action, useParams, createAsync, useSubmission } from "@solidjs/router"
-import { createEffect, Show, createMemo } from "solid-js"
-import { createStore } from "solid-js/store"
-import { withActor } from "~/context/auth.withActor"
-import { Billing } from "@opencode-ai/console-core/billing.js"
-import { Database, eq } from "@opencode-ai/console-core/drizzle/index.js"
-import { BillingTable } from "@opencode-ai/console-core/schema/billing.sql.js"
-import styles from "./reload-section.module.css"
-import { queryBillingInfo } from "../../common"
-import { useI18n } from "~/context/i18n"
-import { formError, formErrorReloadAmountMin, formErrorReloadTriggerMin, localizeError } from "~/lib/form-error"
+﻿import { Billing } from "@blackbox-ai/console-core/billing.js"
+import type { APIEvent } from "@solidjs/start/server"
+import { and, Database, eq, sql } from "@blackbox-ai/console-core/drizzle/index.js"
+import { BillingTable, LiteTable, PaymentTable } from "@blackbox-ai/console-core/schema/billing.sql.js"
+import { Identifier } from "@blackbox-ai/console-core/identifier.js"
+import { centsToMicroCents } from "@blackbox-ai/console-core/util/price.js"
+import { Actor } from "@blackbox-ai/console-core/actor.js"
+import { Resource } from "@blackbox-ai/console-resource"
+import { LiteData } from "@blackbox-ai/console-core/lite.js"
+import { BlackData } from "@blackbox-ai/console-core/black.js"
 
-const reload = action(async (form: FormData) => {
-  "use server"
-  const workspaceID = form.get("workspaceID")?.toString()
-  if (!workspaceID) return { error: formError.workspaceRequired }
-  return json(await withActor(() => Billing.reload(), workspaceID), {
-    revalidate: queryBillingInfo.key,
-  })
-}, "billing.reload")
+export async function POST(input: APIEvent) {
+  const body = await Billing.stripe().webhooks.constructEventAsync(
+    await input.request.text(),
+    input.request.headers.get("stripe-signature")!,
+    Resource.STRIPE_WEBHOOK_SECRET.value,
+  )
+  console.log(body.type, JSON.stringify(body, null, 2))
 
-const setReload = action(async (form: FormData) => {
-  "use server"
-  const workspaceID = form.get("workspaceID")?.toString()
-  if (!workspaceID) return { error: formError.workspaceRequired }
-  const reloadValue = form.get("reload")?.toString() === "true"
-  const amountStr = form.get("reloadAmount")?.toString()
-  const triggerStr = form.get("reloadTrigger")?.toString()
+  return (async () => {
+    if (body.type === "customer.updated") {
+      // check default payment method changed
+      const prevInvoiceSettings = body.data.previous_attributes?.invoice_settings ?? {}
+      if (!("default_payment_method" in prevInvoiceSettings)) return "ignored"
 
-  const reloadAmount = amountStr && amountStr.trim() !== "" ? parseInt(amountStr) : null
-  const reloadTrigger = triggerStr && triggerStr.trim() !== "" ? parseInt(triggerStr) : null
+      const customerID = body.data.object.id
+      const paymentMethodID = body.data.object.invoice_settings.default_payment_method as string
 
-  if (reloadValue) {
-    if (reloadAmount === null || reloadAmount < Billing.RELOAD_AMOUNT_MIN)
-      return { error: formErrorReloadAmountMin(Billing.RELOAD_AMOUNT_MIN) }
-    if (reloadTrigger === null || reloadTrigger < Billing.RELOAD_TRIGGER_MIN)
-      return { error: formErrorReloadTriggerMin(Billing.RELOAD_TRIGGER_MIN) }
-  }
+      if (!customerID) throw new Error("Customer ID not found")
+      if (!paymentMethodID) throw new Error("Payment method ID not found")
 
-  return json(
-    await Database.use((tx) =>
-      tx
-        .update(BillingTable)
-        .set({
-          reload: reloadValue,
-          ...(reloadAmount !== null ? { reloadAmount } : {}),
-          ...(reloadTrigger !== null ? { reloadTrigger } : {}),
-          ...(reloadValue
-            ? {
+      const paymentMethod = await Billing.stripe().paymentMethods.retrieve(paymentMethodID)
+      await Database.use(async (tx) => {
+        await tx
+          .update(BillingTable)
+          .set({
+            paymentMethodID,
+            paymentMethodLast4: paymentMethod.card?.last4 ?? null,
+            paymentMethodType: paymentMethod.type,
+          })
+          .where(eq(BillingTable.customerID, customerID))
+      })
+    }
+    if (body.type === "checkout.session.completed" && body.data.object.mode === "payment") {
+      const workspaceID = body.data.object.metadata?.workspaceID
+      const amountInCents = body.data.object.metadata?.amount && parseInt(body.data.object.metadata?.amount)
+      const customerID = body.data.object.customer as string
+      const paymentID = body.data.object.payment_intent as string
+      const invoiceID = body.data.object.invoice as string
+
+      if (!workspaceID) throw new Error("Workspace ID not found")
+      if (!customerID) throw new Error("Customer ID not found")
+      if (!amountInCents) throw new Error("Amount not found")
+      if (!paymentID) throw new Error("Payment ID not found")
+      if (!invoiceID) throw new Error("Invoice ID not found")
+
+      await Actor.provide("system", { workspaceID }, async () => {
+        const customer = await Billing.get()
+        if (customer?.customerID && customer.customerID !== customerID) throw new Error("Customer ID mismatch")
+
+        // set customer metadata
+        if (!customer?.customerID) {
+          await Billing.stripe().customers.update(customerID, {
+            metadata: {
+              workspaceID,
+            },
+          })
+        }
+
+        // get payment method for the payment intent
+        const paymentIntent = await Billing.stripe().paymentIntents.retrieve(paymentID, {
+          expand: ["payment_method"],
+        })
+        const paymentMethod = paymentIntent.payment_method
+        if (!paymentMethod || typeof paymentMethod === "string") throw new Error("Payment method not expanded")
+
+        await Database.transaction(async (tx) => {
+          await tx
+            .update(BillingTable)
+            .set({
+              balance: sql`${BillingTable.balance} + ${centsToMicroCents(amountInCents)}`,
+              customerID,
+              paymentMethodID: paymentMethod.id,
+              paymentMethodLast4: paymentMethod.card?.last4 ?? null,
+              paymentMethodType: paymentMethod.type,
+              // enable reload if first time enabling billing
+              ...(customer?.customerID
+                ? {}
+                : {
+                    reloadError: null,
+                    timeReloadError: null,
+                  }),
+            })
+            .where(eq(BillingTable.workspaceID, workspaceID))
+          await tx.insert(PaymentTable).values({
+            workspaceID,
+            id: Identifier.create("payment"),
+            amount: centsToMicroCents(amountInCents),
+            paymentID,
+            invoiceID,
+            customerID,
+          })
+        })
+      })
+    }
+    if (body.type === "customer.subscription.created") {
+      const type = body.data.object.metadata?.type
+      if (type === "lite") {
+        const workspaceID = body.data.object.metadata?.workspaceID
+        const userID = body.data.object.metadata?.userID
+        const customerID = body.data.object.customer as string
+        const invoiceID = body.data.object.latest_invoice as string
+        const subscriptionID = body.data.object.id as string
+
+        if (!workspaceID) throw new Error("Workspace ID not found")
+        if (!userID) throw new Error("User ID not found")
+        if (!customerID) throw new Error("Customer ID not found")
+        if (!invoiceID) throw new Error("Invoice ID not found")
+        if (!subscriptionID) throw new Error("Subscription ID not found")
+
+        // get payment id from invoice
+        const invoice = await Billing.stripe().invoices.retrieve(invoiceID, {
+          expand: ["payments"],
+        })
+        const paymentID = invoice.payments?.data[0].payment.payment_intent as string
+        if (!paymentID) throw new Error("Payment ID not found")
+
+        // get payment method for the payment intent
+        const paymentIntent = await Billing.stripe().paymentIntents.retrieve(paymentID, {
+          expand: ["payment_method"],
+        })
+        const paymentMethod = paymentIntent.payment_method
+        if (!paymentMethod || typeof paymentMethod === "string") throw new Error("Payment method not expanded")
+
+        await Actor.provide("system", { workspaceID }, async () => {
+          // look up current billing
+          const billing = await Billing.get()
+          if (!billing) throw new Error(`Workspace with ID ${workspaceID} not found`)
+          if (billing.customerID && billing.customerID !== customerID) throw new Error("Customer ID mismatch")
+
+          // set customer metadata
+          if (!billing?.customerID) {
+            await Billing.stripe().customers.update(customerID, {
+              metadata: {
+                workspaceID,
+              },
+            })
+          }
+
+          await Database.transaction(async (tx) => {
+            await tx
+              .update(BillingTable)
+              .set({
+                customerID,
+                liteSubscriptionID: subscriptionID,
+                lite: {},
+                paymentMethodID: paymentMethod.id,
+                paymentMethodLast4: paymentMethod.card?.last4 ?? null,
+                paymentMethodType: paymentMethod.type,
+              })
+              .where(eq(BillingTable.workspaceID, workspaceID))
+
+            await tx.insert(LiteTable).values({
+              workspaceID,
+              id: Identifier.create("lite"),
+              userID: userID,
+            })
+          })
+        })
+      }
+    }
+    if (body.type === "customer.subscription.updated" && body.data.object.status === "incomplete_expired") {
+      const subscriptionID = body.data.object.id
+      if (!subscriptionID) throw new Error("Subscription ID not found")
+
+      const productID = body.data.object.items.data[0].price.product as string
+      if (productID === LiteData.productID()) {
+        await Billing.unsubscribeLite({ subscriptionID })
+      } else if (productID === BlackData.productID()) {
+        await Billing.unsubscribeBlack({ subscriptionID })
+      }
+    }
+    if (body.type === "customer.subscription.deleted") {
+      const subscriptionID = body.data.object.id
+      if (!subscriptionID) throw new Error("Subscription ID not found")
+
+      const productID = body.data.object.items.data[0].price.product as string
+      if (productID === LiteData.productID()) {
+        await Billing.unsubscribeLite({ subscriptionID })
+      } else if (productID === BlackData.productID()) {
+        await Billing.unsubscribeBlack({ subscriptionID })
+      }
+    }
+    if (body.type === "invoice.payment_succeeded") {
+      if (
+        body.data.object.billing_reason === "subscription_create" ||
+        body.data.object.billing_reason === "subscription_cycle"
+      ) {
+        const invoiceID = body.data.object.id as string
+        const amountInCents = body.data.object.amount_paid
+        const customerID = body.data.object.customer as string
+        const subscriptionID = body.data.object.parent?.subscription_details?.subscription as string
+
+        if (!customerID) throw new Error("Customer ID not found")
+        if (!invoiceID) throw new Error("Invoice ID not found")
+        if (!subscriptionID) throw new Error("Subscription ID not found")
+
+        // get coupon id from subscription
+        const subscriptionData = await Billing.stripe().subscriptions.retrieve(subscriptionID, {
+          expand: ["discounts"],
+        })
+        const couponID =
+          typeof subscriptionData.discounts[0] === "string"
+            ? subscriptionData.discounts[0]
+            : subscriptionData.discounts[0]?.coupon?.id
+        const productID = subscriptionData.items.data[0].price.product as string
+
+        // get payment id from invoice
+        const invoice = await Billing.stripe().invoices.retrieve(invoiceID, {
+          expand: ["payments"],
+        })
+        const paymentID = invoice.payments?.data[0].payment.payment_intent as string
+        if (!paymentID) {
+          // payment id can be undefined when using coupon
+          if (!couponID) throw new Error("Payment ID not found")
+        }
+
+        const workspaceID = await Database.use((tx) =>
+          tx
+            .select({ workspaceID: BillingTable.workspaceID })
+            .from(BillingTable)
+            .where(eq(BillingTable.customerID, customerID))
+            .then((rows) => rows[0]?.workspaceID),
+        )
+        if (!workspaceID) throw new Error("Workspace ID not found for customer")
+
+        await Database.use((tx) =>
+          tx.insert(PaymentTable).values({
+            workspaceID,
+            id: Identifier.create("payment"),
+            amount: centsToMicroCents(amountInCents),
+            paymentID,
+            invoiceID,
+            customerID,
+            enrichment: {
+              type: productID === LiteData.productID() ? "lite" : "subscription",
+              couponID,
+            },
+          }),
+        )
+      } else if (body.data.object.billing_reason === "manual") {
+        const workspaceID = body.data.object.metadata?.workspaceID
+        const amountInCents = body.data.object.metadata?.amount && parseInt(body.data.object.metadata?.amount)
+        const invoiceID = body.data.object.id as string
+        const customerID = body.data.object.customer as string
+
+        if (!workspaceID) throw new Error("Workspace ID not found")
+        if (!customerID) throw new Error("Customer ID not found")
+        if (!amountInCents) throw new Error("Amount not found")
+        if (!invoiceID) throw new Error("Invoice ID not found")
+
+        await Actor.provide("system", { workspaceID }, async () => {
+          // get payment id from invoice
+          const invoice = await Billing.stripe().invoices.retrieve(invoiceID, {
+            expand: ["payments"],
+          })
+          await Database.transaction(async (tx) => {
+            await tx
+              .update(BillingTable)
+              .set({
+                balance: sql`${BillingTable.balance} + ${centsToMicroCents(amountInCents)}`,
                 reloadError: null,
                 timeReloadError: null,
-              }
-            : {}),
+              })
+              .where(eq(BillingTable.workspaceID, Actor.workspace()))
+            await tx.insert(PaymentTable).values({
+              workspaceID: Actor.workspace(),
+              id: Identifier.create("payment"),
+              amount: centsToMicroCents(amountInCents),
+              invoiceID,
+              paymentID: invoice.payments?.data[0].payment.payment_intent as string,
+              customerID,
+            })
+          })
         })
-        .where(eq(BillingTable.workspaceID, workspaceID)),
-    ),
-    { revalidate: queryBillingInfo.key },
-  )
-}, "billing.setReload")
-
-export function ReloadSection() {
-  const params = useParams()
-  const i18n = useI18n()
-  const billingInfo = createAsync(() => queryBillingInfo(params.id!))
-  const setReloadSubmission = useSubmission(setReload)
-  const reloadSubmission = useSubmission(reload)
-  const [store, setStore] = createStore({
-    show: false,
-    reload: false,
-    reloadAmount: "",
-    reloadTrigger: "",
-  })
-
-  const processingFee = createMemo(() => {
-    const reloadAmount = billingInfo()?.reloadAmount
-    if (!reloadAmount) return "0.00"
-    return (((reloadAmount + 0.3) / 0.956) * 0.044 + 0.3).toFixed(2)
-  })
-
-  createEffect(() => {
-    if (!setReloadSubmission.pending && setReloadSubmission.result && !(setReloadSubmission.result as any).error) {
-      setStore("show", false)
+      }
     }
-  })
+    if (body.type === "invoice.payment_failed" || body.type === "invoice.payment_action_required") {
+      if (body.data.object.billing_reason === "manual") {
+        const workspaceID = body.data.object.metadata?.workspaceID
+        const invoiceID = body.data.object.id
 
-  function show() {
-    while (true) {
-      setReloadSubmission.clear()
-      if (!setReloadSubmission.result) break
+        if (!workspaceID) throw new Error("Workspace ID not found")
+        if (!invoiceID) throw new Error("Invoice ID not found")
+
+        const paymentIntent = await Billing.stripe().paymentIntents.retrieve(invoiceID)
+        console.log(JSON.stringify(paymentIntent))
+        const errorMessage =
+          typeof paymentIntent === "object" && paymentIntent !== null
+            ? paymentIntent.last_payment_error?.message
+            : undefined
+
+        await Actor.provide("system", { workspaceID }, async () => {
+          await Database.use((tx) =>
+            tx
+              .update(BillingTable)
+              .set({
+                reload: false,
+                reloadError: errorMessage ?? "Payment failed.",
+                timeReloadError: sql`now()`,
+              })
+              .where(eq(BillingTable.workspaceID, Actor.workspace())),
+          )
+        })
+      }
     }
-    const info = billingInfo()!
-    setStore("show", true)
-    setStore("reload", info.reload ? true : true)
-    setStore("reloadAmount", info.reloadAmount.toString())
-    setStore("reloadTrigger", info.reloadTrigger.toString())
-  }
+    if (body.type === "charge.refunded") {
+      const customerID = body.data.object.customer as string
+      const paymentIntentID = body.data.object.payment_intent as string
+      if (!customerID) throw new Error("Customer ID not found")
+      if (!paymentIntentID) throw new Error("Payment ID not found")
 
-  function hide() {
-    setStore("show", false)
-  }
+      const workspaceID = await Database.use((tx) =>
+        tx
+          .select({
+            workspaceID: BillingTable.workspaceID,
+          })
+          .from(BillingTable)
+          .where(eq(BillingTable.customerID, customerID))
+          .then((rows) => rows[0]?.workspaceID),
+      )
+      if (!workspaceID) throw new Error("Workspace ID not found")
 
-  return (
-    <section class={styles.root}>
-      <div data-slot="section-title">
-        <h2>{i18n.t("workspace.reload.title")}</h2>
-        <div data-slot="title-row">
-          <Show
-            when={billingInfo()?.reload}
-            fallback={
-              <p>
-                {i18n.t("workspace.reload.disabled.before")} <b>{i18n.t("workspace.reload.disabled.state")}</b>.{" "}
-                {i18n.t("workspace.reload.disabled.after")}
-              </p>
-            }
-          >
-            <p>
-              {i18n.t("workspace.reload.enabled.before")} <b>{i18n.t("workspace.reload.enabled.state")}</b>.{" "}
-              {i18n.t("workspace.reload.enabled.middle")} <b>${billingInfo()?.reloadAmount}</b> (+${processingFee()}{" "}
-              {i18n.t("workspace.reload.processingFee")}) {i18n.t("workspace.reload.enabled.after")}{" "}
-              <b>${billingInfo()?.reloadTrigger}</b>.
-            </p>
-          </Show>
-          <button data-color="primary" type="button" onClick={() => show()}>
-            {billingInfo()?.reload ? i18n.t("workspace.reload.edit") : i18n.t("workspace.reload.enable")}
-          </button>
-        </div>
-      </div>
-      <Show when={store.show}>
-        <form action={setReload} method="post" data-slot="create-form">
-          <div data-slot="form-field">
-            <label>
-              <span data-slot="field-label">{i18n.t("workspace.reload.enableAutoReload")}</span>
-              <div data-slot="toggle-container">
-                <label data-slot="model-toggle-label">
-                  <input
-                    type="checkbox"
-                    name="reload"
-                    value="true"
-                    checked={store.reload}
-                    onChange={(e) => setStore("reload", e.currentTarget.checked)}
-                  />
-                  <span></span>
-                </label>
-              </div>
-            </label>
-          </div>
+      const amount = await Database.use((tx) =>
+        tx
+          .select({
+            amount: PaymentTable.amount,
+          })
+          .from(PaymentTable)
+          .where(and(eq(PaymentTable.paymentID, paymentIntentID), eq(PaymentTable.workspaceID, workspaceID)))
+          .then((rows) => rows[0]?.amount),
+      )
+      if (!amount) throw new Error("Payment not found")
 
-          <div data-slot="input-row">
-            <div data-slot="input-field">
-              <p>{i18n.t("workspace.reload.reloadAmount")}</p>
-              <input
-                data-component="input"
-                name="reloadAmount"
-                type="number"
-                min={billingInfo()?.reloadAmountMin.toString()}
-                step="1"
-                value={store.reloadAmount}
-                onInput={(e) => setStore("reloadAmount", e.currentTarget.value)}
-                placeholder={billingInfo()?.reloadAmount.toString()}
-                disabled={!store.reload}
-              />
-            </div>
-            <div data-slot="input-field">
-              <p>{i18n.t("workspace.reload.whenBalanceReaches")}</p>
-              <input
-                data-component="input"
-                name="reloadTrigger"
-                type="number"
-                min={billingInfo()?.reloadTriggerMin.toString()}
-                step="1"
-                value={store.reloadTrigger}
-                onInput={(e) => setStore("reloadTrigger", e.currentTarget.value)}
-                placeholder={billingInfo()?.reloadTrigger.toString()}
-                disabled={!store.reload}
-              />
-            </div>
-          </div>
+      await Database.transaction(async (tx) => {
+        await tx
+          .update(PaymentTable)
+          .set({
+            timeRefunded: new Date(body.created * 1000),
+          })
+          .where(and(eq(PaymentTable.paymentID, paymentIntentID), eq(PaymentTable.workspaceID, workspaceID)))
 
-          <Show when={setReloadSubmission.result && (setReloadSubmission.result as any).error}>
-            {(err: any) => <div data-slot="form-error">{localizeError(i18n.t, err())}</div>}
-          </Show>
-          <input type="hidden" name="workspaceID" value={params.id} />
-          <div data-slot="form-actions">
-            <button type="button" data-color="ghost" onClick={() => hide()}>
-              {i18n.t("common.cancel")}
-            </button>
-            <button type="submit" data-color="primary" disabled={setReloadSubmission.pending}>
-              {setReloadSubmission.pending ? i18n.t("workspace.reload.saving") : i18n.t("workspace.reload.save")}
-            </button>
-          </div>
-        </form>
-      </Show>
-      <Show when={billingInfo()?.reloadError}>
-        <div data-slot="section-content">
-          <div data-slot="reload-error">
-            <p>
-              {i18n.t("workspace.reload.failedAt")}{" "}
-              {billingInfo()?.timeReloadError!.toLocaleString(undefined, {
-                month: "short",
-                day: "numeric",
-                hour: "numeric",
-                minute: "2-digit",
-                second: "2-digit",
-              })}
-              . {i18n.t("workspace.reload.reason")} {billingInfo()?.reloadError?.replace(/\.$/, "")}.{" "}
-              {i18n.t("workspace.reload.updatePaymentMethod")}
-            </p>
-            <form action={reload} method="post" data-slot="create-form">
-              <input type="hidden" name="workspaceID" value={params.id} />
-              <button data-color="ghost" type="submit" disabled={reloadSubmission.pending}>
-                {reloadSubmission.pending ? i18n.t("workspace.reload.retrying") : i18n.t("workspace.reload.retry")}
-              </button>
-            </form>
-          </div>
-        </div>
-      </Show>
-    </section>
-  )
+        await tx
+          .update(BillingTable)
+          .set({
+            balance: sql`${BillingTable.balance} - ${amount}`,
+          })
+          .where(eq(BillingTable.workspaceID, workspaceID))
+      })
+    }
+  })()
+    .then((message) => {
+      return Response.json({ message: message ?? "done" }, { status: 200 })
+    })
+    .catch((error: any) => {
+      return Response.json({ message: error.message }, { status: 500 })
+    })
 }

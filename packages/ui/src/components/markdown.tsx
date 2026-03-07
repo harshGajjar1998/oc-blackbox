@@ -1,8 +1,8 @@
-import { useMarked } from "../context/marked"
+﻿import { useMarked } from "../context/marked"
 import { useI18n } from "../context/i18n"
 import DOMPurify from "dompurify"
 import morphdom from "morphdom"
-import { checksum } from "@opencode-ai/util/encode"
+import { checksum } from "@blackbox-ai/util/encode"
 import { ComponentProps, createEffect, createResource, createSignal, onCleanup, splitProps } from "solid-js"
 import { isServer } from "solid-js/web"
 

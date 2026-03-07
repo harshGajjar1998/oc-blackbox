@@ -1,4 +1,4 @@
-import { createMemo, For, Show, type Accessor, type JSX } from "solid-js"
+﻿import { createMemo, For, Show, type Accessor, type JSX } from "solid-js"
 import {
   DragDropProvider,
   DragDropSensors,
@@ -8,8 +8,8 @@ import {
   type DragEvent,
 } from "@thisbeyond/solid-dnd"
 import { ConstrainDragXAxis } from "@/utils/solid-dnd"
-import { IconButton } from "@opencode-ai/ui/icon-button"
-import { Tooltip, TooltipKeybind } from "@opencode-ai/ui/tooltip"
+import { IconButton } from "@blackbox-ai/ui/icon-button"
+import { Tooltip, TooltipKeybind } from "@blackbox-ai/ui/tooltip"
 import { type LocalProject } from "@/context/layout"
 import { sidebarExpanded } from "./sidebar-shell-helpers"
 

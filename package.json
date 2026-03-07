@@ -1,6 +1,6 @@
 {
   "$schema": "https://json.schemastore.org/package.json",
-  "name": "opencode",
+  "name": "blackbox-ai",
   "description": "AI-powered development tool",
   "private": true,
   "type": "module",
@@ -79,14 +79,14 @@
   },
   "dependencies": {
     "@aws-sdk/client-s3": "3.933.0",
-    "@opencode-ai/plugin": "workspace:*",
-    "@opencode-ai/script": "workspace:*",
-    "@opencode-ai/sdk": "workspace:*",
+    "@blackbox-ai/plugin": "workspace:*",
+    "@blackbox-ai/script": "workspace:*",
+    "@blackbox-ai/sdk": "workspace:*",
     "typescript": "catalog:"
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/anomalyco/opencode"
+    "url": "https://github.com/anomalyco/blackbox-ai"
   },
   "license": "MIT",
   "prettier": {

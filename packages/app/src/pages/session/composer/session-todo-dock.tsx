@@ -1,7 +1,7 @@
-import type { Todo } from "@opencode-ai/sdk/v2"
-import { Checkbox } from "@opencode-ai/ui/checkbox"
-import { DockTray } from "@opencode-ai/ui/dock-surface"
-import { IconButton } from "@opencode-ai/ui/icon-button"
+﻿import type { Todo } from "@blackbox-ai/sdk/v2"
+import { Checkbox } from "@blackbox-ai/ui/checkbox"
+import { DockTray } from "@blackbox-ai/ui/dock-surface"
+import { IconButton } from "@blackbox-ai/ui/icon-button"
 import { For, Show, createEffect, createMemo, createSignal, on, onCleanup } from "solid-js"
 import { createStore } from "solid-js/store"
 

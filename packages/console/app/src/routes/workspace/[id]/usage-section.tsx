@@ -1,217 +1,368 @@
-import { Billing } from "@opencode-ai/console-core/billing.js"
-import { createAsync, query, useParams } from "@solidjs/router"
-import { createMemo, For, Show, Switch, Match, createEffect, createSignal } from "solid-js"
-import { formatDateUTC, formatDateForTable } from "../common"
-import { withActor } from "~/context/auth.withActor"
-import { IconChevronLeft, IconChevronRight, IconBreakdown } from "~/component/icon"
-import styles from "./usage-section.module.css"
-import { createStore } from "solid-js/store"
-import { useI18n } from "~/context/i18n"
+﻿import { Billing } from "@blackbox-ai/console-core/billing.js"
+import type { APIEvent } from "@solidjs/start/server"
+import { and, Database, eq, sql } from "@blackbox-ai/console-core/drizzle/index.js"
+import { BillingTable, LiteTable, PaymentTable } from "@blackbox-ai/console-core/schema/billing.sql.js"
+import { Identifier } from "@blackbox-ai/console-core/identifier.js"
+import { centsToMicroCents } from "@blackbox-ai/console-core/util/price.js"
+import { Actor } from "@blackbox-ai/console-core/actor.js"
+import { Resource } from "@blackbox-ai/console-resource"
+import { LiteData } from "@blackbox-ai/console-core/lite.js"
+import { BlackData } from "@blackbox-ai/console-core/black.js"
 
-const PAGE_SIZE = 50
+export async function POST(input: APIEvent) {
+  const body = await Billing.stripe().webhooks.constructEventAsync(
+    await input.request.text(),
+    input.request.headers.get("stripe-signature")!,
+    Resource.STRIPE_WEBHOOK_SECRET.value,
+  )
+  console.log(body.type, JSON.stringify(body, null, 2))
 
-async function getUsageInfo(workspaceID: string, page: number) {
-  "use server"
-  return withActor(async () => {
-    return await Billing.usages(page, PAGE_SIZE)
-  }, workspaceID)
-}
+  return (async () => {
+    if (body.type === "customer.updated") {
+      // check default payment method changed
+      const prevInvoiceSettings = body.data.previous_attributes?.invoice_settings ?? {}
+      if (!("default_payment_method" in prevInvoiceSettings)) return "ignored"
 
-const queryUsageInfo = query(getUsageInfo, "usage.list")
+      const customerID = body.data.object.id
+      const paymentMethodID = body.data.object.invoice_settings.default_payment_method as string
 
-export function UsageSection() {
-  const params = useParams()
-  const i18n = useI18n()
-  const usage = createAsync(() => queryUsageInfo(params.id!, 0))
-  const [store, setStore] = createStore({ page: 0, usage: [] as Awaited<ReturnType<typeof getUsageInfo>> })
-  const [openBreakdownId, setOpenBreakdownId] = createSignal<string | null>(null)
+      if (!customerID) throw new Error("Customer ID not found")
+      if (!paymentMethodID) throw new Error("Payment method ID not found")
 
-  createEffect(() => {
-    setStore({ usage: usage() })
-  }, [usage])
+      const paymentMethod = await Billing.stripe().paymentMethods.retrieve(paymentMethodID)
+      await Database.use(async (tx) => {
+        await tx
+          .update(BillingTable)
+          .set({
+            paymentMethodID,
+            paymentMethodLast4: paymentMethod.card?.last4 ?? null,
+            paymentMethodType: paymentMethod.type,
+          })
+          .where(eq(BillingTable.customerID, customerID))
+      })
+    }
+    if (body.type === "checkout.session.completed" && body.data.object.mode === "payment") {
+      const workspaceID = body.data.object.metadata?.workspaceID
+      const amountInCents = body.data.object.metadata?.amount && parseInt(body.data.object.metadata?.amount)
+      const customerID = body.data.object.customer as string
+      const paymentID = body.data.object.payment_intent as string
+      const invoiceID = body.data.object.invoice as string
 
-  createEffect(() => {
-    if (!openBreakdownId()) return
+      if (!workspaceID) throw new Error("Workspace ID not found")
+      if (!customerID) throw new Error("Customer ID not found")
+      if (!amountInCents) throw new Error("Amount not found")
+      if (!paymentID) throw new Error("Payment ID not found")
+      if (!invoiceID) throw new Error("Invoice ID not found")
 
-    const handleClickOutside = (e: MouseEvent) => {
-      const target = e.target as HTMLElement
-      if (!target.closest('[data-slot="tokens-with-breakdown"]')) {
-        setOpenBreakdownId(null)
+      await Actor.provide("system", { workspaceID }, async () => {
+        const customer = await Billing.get()
+        if (customer?.customerID && customer.customerID !== customerID) throw new Error("Customer ID mismatch")
+
+        // set customer metadata
+        if (!customer?.customerID) {
+          await Billing.stripe().customers.update(customerID, {
+            metadata: {
+              workspaceID,
+            },
+          })
+        }
+
+        // get payment method for the payment intent
+        const paymentIntent = await Billing.stripe().paymentIntents.retrieve(paymentID, {
+          expand: ["payment_method"],
+        })
+        const paymentMethod = paymentIntent.payment_method
+        if (!paymentMethod || typeof paymentMethod === "string") throw new Error("Payment method not expanded")
+
+        await Database.transaction(async (tx) => {
+          await tx
+            .update(BillingTable)
+            .set({
+              balance: sql`${BillingTable.balance} + ${centsToMicroCents(amountInCents)}`,
+              customerID,
+              paymentMethodID: paymentMethod.id,
+              paymentMethodLast4: paymentMethod.card?.last4 ?? null,
+              paymentMethodType: paymentMethod.type,
+              // enable reload if first time enabling billing
+              ...(customer?.customerID
+                ? {}
+                : {
+                    reloadError: null,
+                    timeReloadError: null,
+                  }),
+            })
+            .where(eq(BillingTable.workspaceID, workspaceID))
+          await tx.insert(PaymentTable).values({
+            workspaceID,
+            id: Identifier.create("payment"),
+            amount: centsToMicroCents(amountInCents),
+            paymentID,
+            invoiceID,
+            customerID,
+          })
+        })
+      })
+    }
+    if (body.type === "customer.subscription.created") {
+      const type = body.data.object.metadata?.type
+      if (type === "lite") {
+        const workspaceID = body.data.object.metadata?.workspaceID
+        const userID = body.data.object.metadata?.userID
+        const customerID = body.data.object.customer as string
+        const invoiceID = body.data.object.latest_invoice as string
+        const subscriptionID = body.data.object.id as string
+
+        if (!workspaceID) throw new Error("Workspace ID not found")
+        if (!userID) throw new Error("User ID not found")
+        if (!customerID) throw new Error("Customer ID not found")
+        if (!invoiceID) throw new Error("Invoice ID not found")
+        if (!subscriptionID) throw new Error("Subscription ID not found")
+
+        // get payment id from invoice
+        const invoice = await Billing.stripe().invoices.retrieve(invoiceID, {
+          expand: ["payments"],
+        })
+        const paymentID = invoice.payments?.data[0].payment.payment_intent as string
+        if (!paymentID) throw new Error("Payment ID not found")
+
+        // get payment method for the payment intent
+        const paymentIntent = await Billing.stripe().paymentIntents.retrieve(paymentID, {
+          expand: ["payment_method"],
+        })
+        const paymentMethod = paymentIntent.payment_method
+        if (!paymentMethod || typeof paymentMethod === "string") throw new Error("Payment method not expanded")
+
+        await Actor.provide("system", { workspaceID }, async () => {
+          // look up current billing
+          const billing = await Billing.get()
+          if (!billing) throw new Error(`Workspace with ID ${workspaceID} not found`)
+          if (billing.customerID && billing.customerID !== customerID) throw new Error("Customer ID mismatch")
+
+          // set customer metadata
+          if (!billing?.customerID) {
+            await Billing.stripe().customers.update(customerID, {
+              metadata: {
+                workspaceID,
+              },
+            })
+          }
+
+          await Database.transaction(async (tx) => {
+            await tx
+              .update(BillingTable)
+              .set({
+                customerID,
+                liteSubscriptionID: subscriptionID,
+                lite: {},
+                paymentMethodID: paymentMethod.id,
+                paymentMethodLast4: paymentMethod.card?.last4 ?? null,
+                paymentMethodType: paymentMethod.type,
+              })
+              .where(eq(BillingTable.workspaceID, workspaceID))
+
+            await tx.insert(LiteTable).values({
+              workspaceID,
+              id: Identifier.create("lite"),
+              userID: userID,
+            })
+          })
+        })
       }
     }
+    if (body.type === "customer.subscription.updated" && body.data.object.status === "incomplete_expired") {
+      const subscriptionID = body.data.object.id
+      if (!subscriptionID) throw new Error("Subscription ID not found")
 
-    document.addEventListener("click", handleClickOutside)
-    return () => document.removeEventListener("click", handleClickOutside)
-  })
+      const productID = body.data.object.items.data[0].price.product as string
+      if (productID === LiteData.productID()) {
+        await Billing.unsubscribeLite({ subscriptionID })
+      } else if (productID === BlackData.productID()) {
+        await Billing.unsubscribeBlack({ subscriptionID })
+      }
+    }
+    if (body.type === "customer.subscription.deleted") {
+      const subscriptionID = body.data.object.id
+      if (!subscriptionID) throw new Error("Subscription ID not found")
 
-  const hasResults = createMemo(() => store.usage && store.usage.length > 0)
-  const canGoPrev = createMemo(() => store.page > 0)
-  const canGoNext = createMemo(() => store.usage && store.usage.length === PAGE_SIZE)
+      const productID = body.data.object.items.data[0].price.product as string
+      if (productID === LiteData.productID()) {
+        await Billing.unsubscribeLite({ subscriptionID })
+      } else if (productID === BlackData.productID()) {
+        await Billing.unsubscribeBlack({ subscriptionID })
+      }
+    }
+    if (body.type === "invoice.payment_succeeded") {
+      if (
+        body.data.object.billing_reason === "subscription_create" ||
+        body.data.object.billing_reason === "subscription_cycle"
+      ) {
+        const invoiceID = body.data.object.id as string
+        const amountInCents = body.data.object.amount_paid
+        const customerID = body.data.object.customer as string
+        const subscriptionID = body.data.object.parent?.subscription_details?.subscription as string
 
-  const calculateTotalInputTokens = (u: Awaited<ReturnType<typeof getUsageInfo>>[0]) => {
-    return u.inputTokens + (u.cacheReadTokens ?? 0) + (u.cacheWrite5mTokens ?? 0) + (u.cacheWrite1hTokens ?? 0)
-  }
+        if (!customerID) throw new Error("Customer ID not found")
+        if (!invoiceID) throw new Error("Invoice ID not found")
+        if (!subscriptionID) throw new Error("Subscription ID not found")
 
-  const calculateTotalOutputTokens = (u: Awaited<ReturnType<typeof getUsageInfo>>[0]) => {
-    return u.outputTokens + (u.reasoningTokens ?? 0)
-  }
+        // get coupon id from subscription
+        const subscriptionData = await Billing.stripe().subscriptions.retrieve(subscriptionID, {
+          expand: ["discounts"],
+        })
+        const couponID =
+          typeof subscriptionData.discounts[0] === "string"
+            ? subscriptionData.discounts[0]
+            : subscriptionData.discounts[0]?.coupon?.id
+        const productID = subscriptionData.items.data[0].price.product as string
 
-  const goPrev = async () => {
-    const usage = await getUsageInfo(params.id!, store.page - 1)
-    setStore({
-      page: store.page - 1,
-      usage,
+        // get payment id from invoice
+        const invoice = await Billing.stripe().invoices.retrieve(invoiceID, {
+          expand: ["payments"],
+        })
+        const paymentID = invoice.payments?.data[0].payment.payment_intent as string
+        if (!paymentID) {
+          // payment id can be undefined when using coupon
+          if (!couponID) throw new Error("Payment ID not found")
+        }
+
+        const workspaceID = await Database.use((tx) =>
+          tx
+            .select({ workspaceID: BillingTable.workspaceID })
+            .from(BillingTable)
+            .where(eq(BillingTable.customerID, customerID))
+            .then((rows) => rows[0]?.workspaceID),
+        )
+        if (!workspaceID) throw new Error("Workspace ID not found for customer")
+
+        await Database.use((tx) =>
+          tx.insert(PaymentTable).values({
+            workspaceID,
+            id: Identifier.create("payment"),
+            amount: centsToMicroCents(amountInCents),
+            paymentID,
+            invoiceID,
+            customerID,
+            enrichment: {
+              type: productID === LiteData.productID() ? "lite" : "subscription",
+              couponID,
+            },
+          }),
+        )
+      } else if (body.data.object.billing_reason === "manual") {
+        const workspaceID = body.data.object.metadata?.workspaceID
+        const amountInCents = body.data.object.metadata?.amount && parseInt(body.data.object.metadata?.amount)
+        const invoiceID = body.data.object.id as string
+        const customerID = body.data.object.customer as string
+
+        if (!workspaceID) throw new Error("Workspace ID not found")
+        if (!customerID) throw new Error("Customer ID not found")
+        if (!amountInCents) throw new Error("Amount not found")
+        if (!invoiceID) throw new Error("Invoice ID not found")
+
+        await Actor.provide("system", { workspaceID }, async () => {
+          // get payment id from invoice
+          const invoice = await Billing.stripe().invoices.retrieve(invoiceID, {
+            expand: ["payments"],
+          })
+          await Database.transaction(async (tx) => {
+            await tx
+              .update(BillingTable)
+              .set({
+                balance: sql`${BillingTable.balance} + ${centsToMicroCents(amountInCents)}`,
+                reloadError: null,
+                timeReloadError: null,
+              })
+              .where(eq(BillingTable.workspaceID, Actor.workspace()))
+            await tx.insert(PaymentTable).values({
+              workspaceID: Actor.workspace(),
+              id: Identifier.create("payment"),
+              amount: centsToMicroCents(amountInCents),
+              invoiceID,
+              paymentID: invoice.payments?.data[0].payment.payment_intent as string,
+              customerID,
+            })
+          })
+        })
+      }
+    }
+    if (body.type === "invoice.payment_failed" || body.type === "invoice.payment_action_required") {
+      if (body.data.object.billing_reason === "manual") {
+        const workspaceID = body.data.object.metadata?.workspaceID
+        const invoiceID = body.data.object.id
+
+        if (!workspaceID) throw new Error("Workspace ID not found")
+        if (!invoiceID) throw new Error("Invoice ID not found")
+
+        const paymentIntent = await Billing.stripe().paymentIntents.retrieve(invoiceID)
+        console.log(JSON.stringify(paymentIntent))
+        const errorMessage =
+          typeof paymentIntent === "object" && paymentIntent !== null
+            ? paymentIntent.last_payment_error?.message
+            : undefined
+
+        await Actor.provide("system", { workspaceID }, async () => {
+          await Database.use((tx) =>
+            tx
+              .update(BillingTable)
+              .set({
+                reload: false,
+                reloadError: errorMessage ?? "Payment failed.",
+                timeReloadError: sql`now()`,
+              })
+              .where(eq(BillingTable.workspaceID, Actor.workspace())),
+          )
+        })
+      }
+    }
+    if (body.type === "charge.refunded") {
+      const customerID = body.data.object.customer as string
+      const paymentIntentID = body.data.object.payment_intent as string
+      if (!customerID) throw new Error("Customer ID not found")
+      if (!paymentIntentID) throw new Error("Payment ID not found")
+
+      const workspaceID = await Database.use((tx) =>
+        tx
+          .select({
+            workspaceID: BillingTable.workspaceID,
+          })
+          .from(BillingTable)
+          .where(eq(BillingTable.customerID, customerID))
+          .then((rows) => rows[0]?.workspaceID),
+      )
+      if (!workspaceID) throw new Error("Workspace ID not found")
+
+      const amount = await Database.use((tx) =>
+        tx
+          .select({
+            amount: PaymentTable.amount,
+          })
+          .from(PaymentTable)
+          .where(and(eq(PaymentTable.paymentID, paymentIntentID), eq(PaymentTable.workspaceID, workspaceID)))
+          .then((rows) => rows[0]?.amount),
+      )
+      if (!amount) throw new Error("Payment not found")
+
+      await Database.transaction(async (tx) => {
+        await tx
+          .update(PaymentTable)
+          .set({
+            timeRefunded: new Date(body.created * 1000),
+          })
+          .where(and(eq(PaymentTable.paymentID, paymentIntentID), eq(PaymentTable.workspaceID, workspaceID)))
+
+        await tx
+          .update(BillingTable)
+          .set({
+            balance: sql`${BillingTable.balance} - ${amount}`,
+          })
+          .where(eq(BillingTable.workspaceID, workspaceID))
+      })
+    }
+  })()
+    .then((message) => {
+      return Response.json({ message: message ?? "done" }, { status: 200 })
     })
-  }
-  const goNext = async () => {
-    const usage = await getUsageInfo(params.id!, store.page + 1)
-    setStore({
-      page: store.page + 1,
-      usage,
+    .catch((error: any) => {
+      return Response.json({ message: error.message }, { status: 500 })
     })
-  }
-
-  return (
-    <section class={styles.root}>
-      <div data-slot="section-title">
-        <h2>{i18n.t("workspace.usage.title")}</h2>
-        <p>{i18n.t("workspace.usage.subtitle")}</p>
-      </div>
-      <div data-slot="usage-table">
-        <Show
-          when={hasResults()}
-          fallback={
-            <div data-component="empty-state">
-              <p>{i18n.t("workspace.usage.empty")}</p>
-            </div>
-          }
-        >
-          <table data-slot="usage-table-element">
-            <thead>
-              <tr>
-                <th>{i18n.t("workspace.usage.table.date")}</th>
-                <th>{i18n.t("workspace.usage.table.model")}</th>
-                <th>{i18n.t("workspace.usage.table.input")}</th>
-                <th>{i18n.t("workspace.usage.table.output")}</th>
-                <th>{i18n.t("workspace.usage.table.cost")}</th>
-                <th>{i18n.t("workspace.usage.table.session")}</th>
-              </tr>
-            </thead>
-            <tbody>
-              <For each={store.usage}>
-                {(usage, index) => {
-                  const date = createMemo(() => new Date(usage.timeCreated))
-                  const totalInputTokens = createMemo(() => calculateTotalInputTokens(usage))
-                  const totalOutputTokens = createMemo(() => calculateTotalOutputTokens(usage))
-                  const inputBreakdownId = `input-breakdown-${index()}`
-                  const outputBreakdownId = `output-breakdown-${index()}`
-                  const isInputOpen = createMemo(() => openBreakdownId() === inputBreakdownId)
-                  const isOutputOpen = createMemo(() => openBreakdownId() === outputBreakdownId)
-                  const isClaude = usage.model.toLowerCase().includes("claude")
-                  return (
-                    <tr>
-                      <td data-slot="usage-date" title={formatDateUTC(date())}>
-                        {formatDateForTable(date())}
-                      </td>
-                      <td data-slot="usage-model">{usage.model}</td>
-                      <td data-slot="usage-tokens">
-                        <div data-slot="tokens-with-breakdown" onClick={(e) => e.stopPropagation()}>
-                          <button
-                            data-slot="breakdown-button"
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              setOpenBreakdownId(isInputOpen() ? null : inputBreakdownId)
-                            }}
-                          >
-                            <IconBreakdown />
-                          </button>
-                          <span onClick={() => setOpenBreakdownId(null)}>{totalInputTokens()}</span>
-                          <Show when={isInputOpen()}>
-                            <div data-slot="breakdown-popup" onClick={(e) => e.stopPropagation()}>
-                              <div data-slot="breakdown-row">
-                                <span data-slot="breakdown-label">{i18n.t("workspace.usage.breakdown.input")}</span>
-                                <span data-slot="breakdown-value">{usage.inputTokens}</span>
-                              </div>
-                              <div data-slot="breakdown-row">
-                                <span data-slot="breakdown-label">{i18n.t("workspace.usage.breakdown.cacheRead")}</span>
-                                <span data-slot="breakdown-value">{usage.cacheReadTokens ?? 0}</span>
-                              </div>
-                              <Show when={isClaude}>
-                                <div data-slot="breakdown-row">
-                                  <span data-slot="breakdown-label">
-                                    {i18n.t("workspace.usage.breakdown.cacheWrite")}
-                                  </span>
-                                  <span data-slot="breakdown-value">{usage.cacheWrite5mTokens ?? 0}</span>
-                                </div>
-                              </Show>
-                            </div>
-                          </Show>
-                        </div>
-                      </td>
-                      <td data-slot="usage-tokens">
-                        <div data-slot="tokens-with-breakdown" onClick={(e) => e.stopPropagation()}>
-                          <button
-                            data-slot="breakdown-button"
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              setOpenBreakdownId(isOutputOpen() ? null : outputBreakdownId)
-                            }}
-                          >
-                            <IconBreakdown />
-                          </button>
-                          <span onClick={() => setOpenBreakdownId(null)}>{totalOutputTokens()}</span>
-                          <Show when={isOutputOpen()}>
-                            <div data-slot="breakdown-popup" onClick={(e) => e.stopPropagation()}>
-                              <div data-slot="breakdown-row">
-                                <span data-slot="breakdown-label">{i18n.t("workspace.usage.breakdown.output")}</span>
-                                <span data-slot="breakdown-value">{usage.outputTokens}</span>
-                              </div>
-                              <div data-slot="breakdown-row">
-                                <span data-slot="breakdown-label">{i18n.t("workspace.usage.breakdown.reasoning")}</span>
-                                <span data-slot="breakdown-value">{usage.reasoningTokens ?? 0}</span>
-                              </div>
-                            </div>
-                          </Show>
-                        </div>
-                      </td>
-                      <td data-slot="usage-cost">
-                        <Switch fallback={<>${((usage.cost ?? 0) / 100000000).toFixed(4)}</>}>
-                          <Match when={usage.enrichment?.plan === "sub"}>
-                            {i18n.t("workspace.usage.subscription", {
-                              amount: ((usage.cost ?? 0) / 100000000).toFixed(4),
-                            })}
-                          </Match>
-                          <Match when={usage.enrichment?.plan === "lite"}>
-                            {i18n.t("workspace.usage.lite", {
-                              amount: ((usage.cost ?? 0) / 100000000).toFixed(4),
-                            })}
-                          </Match>
-                          <Match when={usage.enrichment?.plan === "byok"}>
-                            {i18n.t("workspace.usage.byok", {
-                              amount: ((usage.cost ?? 0) / 100000000).toFixed(4),
-                            })}
-                          </Match>
-                        </Switch>
-                      </td>
-                      <td data-slot="usage-session">{usage.sessionID?.slice(-8) ?? "-"}</td>
-                    </tr>
-                  )
-                }}
-              </For>
-            </tbody>
-          </table>
-          <Show when={canGoPrev() || canGoNext()}>
-            <div data-slot="pagination">
-              <button disabled={!canGoPrev()} onClick={goPrev}>
-                <IconChevronLeft />
-              </button>
-              <button disabled={!canGoNext()} onClick={goNext}>
-                <IconChevronRight />
-              </button>
-            </div>
-          </Show>
-        </Show>
-      </div>
-    </section>
-  )
 }

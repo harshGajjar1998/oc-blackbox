@@ -1,285 +1,368 @@
-import { action, useParams, useAction, useSubmission, json, query, createAsync } from "@solidjs/router"
-import { createStore } from "solid-js/store"
-import { Show } from "solid-js"
-import { Billing } from "@opencode-ai/console-core/billing.js"
-import { Database, eq, and, isNull } from "@opencode-ai/console-core/drizzle/index.js"
-import { BillingTable, LiteTable } from "@opencode-ai/console-core/schema/billing.sql.js"
-import { Actor } from "@opencode-ai/console-core/actor.js"
-import { Subscription } from "@opencode-ai/console-core/subscription.js"
-import { LiteData } from "@opencode-ai/console-core/lite.js"
-import { withActor } from "~/context/auth.withActor"
-import { queryBillingInfo } from "../../common"
-import styles from "./lite-section.module.css"
-import { useI18n } from "~/context/i18n"
-import { useLanguage } from "~/context/language"
+﻿import { Billing } from "@blackbox-ai/console-core/billing.js"
+import type { APIEvent } from "@solidjs/start/server"
+import { and, Database, eq, sql } from "@blackbox-ai/console-core/drizzle/index.js"
+import { BillingTable, LiteTable, PaymentTable } from "@blackbox-ai/console-core/schema/billing.sql.js"
+import { Identifier } from "@blackbox-ai/console-core/identifier.js"
+import { centsToMicroCents } from "@blackbox-ai/console-core/util/price.js"
+import { Actor } from "@blackbox-ai/console-core/actor.js"
+import { Resource } from "@blackbox-ai/console-resource"
+import { LiteData } from "@blackbox-ai/console-core/lite.js"
+import { BlackData } from "@blackbox-ai/console-core/black.js"
 
-const queryLiteSubscription = query(async (workspaceID: string) => {
-  "use server"
-  return withActor(async () => {
-    const row = await Database.use((tx) =>
-      tx
-        .select({
-          userID: LiteTable.userID,
-          rollingUsage: LiteTable.rollingUsage,
-          weeklyUsage: LiteTable.weeklyUsage,
-          monthlyUsage: LiteTable.monthlyUsage,
-          timeRollingUpdated: LiteTable.timeRollingUpdated,
-          timeWeeklyUpdated: LiteTable.timeWeeklyUpdated,
-          timeMonthlyUpdated: LiteTable.timeMonthlyUpdated,
-          timeCreated: LiteTable.timeCreated,
-          lite: BillingTable.lite,
-        })
-        .from(BillingTable)
-        .innerJoin(LiteTable, eq(LiteTable.workspaceID, BillingTable.workspaceID))
-        .where(and(eq(LiteTable.workspaceID, Actor.workspace()), isNull(LiteTable.timeDeleted)))
-        .then((r) => r[0]),
-    )
-    if (!row) return null
-
-    const limits = LiteData.getLimits()
-    const mine = row.userID === Actor.userID()
-
-    return {
-      mine,
-      useBalance: row.lite?.useBalance ?? false,
-      rollingUsage: Subscription.analyzeRollingUsage({
-        limit: limits.rollingLimit,
-        window: limits.rollingWindow,
-        usage: row.rollingUsage ?? 0,
-        timeUpdated: row.timeRollingUpdated ?? new Date(),
-      }),
-      weeklyUsage: Subscription.analyzeWeeklyUsage({
-        limit: limits.weeklyLimit,
-        usage: row.weeklyUsage ?? 0,
-        timeUpdated: row.timeWeeklyUpdated ?? new Date(),
-      }),
-      monthlyUsage: Subscription.analyzeMonthlyUsage({
-        limit: limits.monthlyLimit,
-        usage: row.monthlyUsage ?? 0,
-        timeUpdated: row.timeMonthlyUpdated ?? new Date(),
-        timeSubscribed: row.timeCreated,
-      }),
-    }
-  }, workspaceID)
-}, "lite.subscription.get")
-
-function formatResetTime(seconds: number, i18n: ReturnType<typeof useI18n>) {
-  const days = Math.floor(seconds / 86400)
-  if (days >= 1) {
-    const hours = Math.floor((seconds % 86400) / 3600)
-    return `${days} ${days === 1 ? i18n.t("workspace.lite.time.day") : i18n.t("workspace.lite.time.days")} ${hours} ${hours === 1 ? i18n.t("workspace.lite.time.hour") : i18n.t("workspace.lite.time.hours")}`
-  }
-  const hours = Math.floor(seconds / 3600)
-  const minutes = Math.floor((seconds % 3600) / 60)
-  if (hours >= 1)
-    return `${hours} ${hours === 1 ? i18n.t("workspace.lite.time.hour") : i18n.t("workspace.lite.time.hours")} ${minutes} ${minutes === 1 ? i18n.t("workspace.lite.time.minute") : i18n.t("workspace.lite.time.minutes")}`
-  if (minutes === 0) return i18n.t("workspace.lite.time.fewSeconds")
-  return `${minutes} ${minutes === 1 ? i18n.t("workspace.lite.time.minute") : i18n.t("workspace.lite.time.minutes")}`
-}
-
-const createLiteCheckoutUrl = action(async (workspaceID: string, successUrl: string, cancelUrl: string) => {
-  "use server"
-  return json(
-    await withActor(
-      () =>
-        Billing.generateLiteCheckoutUrl({ successUrl, cancelUrl })
-          .then((data) => ({ error: undefined, data }))
-          .catch((e) => ({
-            error: e.message as string,
-            data: undefined,
-          })),
-      workspaceID,
-    ),
-    { revalidate: [queryBillingInfo.key, queryLiteSubscription.key] },
+export async function POST(input: APIEvent) {
+  const body = await Billing.stripe().webhooks.constructEventAsync(
+    await input.request.text(),
+    input.request.headers.get("stripe-signature")!,
+    Resource.STRIPE_WEBHOOK_SECRET.value,
   )
-}, "liteCheckoutUrl")
+  console.log(body.type, JSON.stringify(body, null, 2))
 
-const createSessionUrl = action(async (workspaceID: string, returnUrl: string) => {
-  "use server"
-  return json(
-    await withActor(
-      () =>
-        Billing.generateSessionUrl({ returnUrl })
-          .then((data) => ({ error: undefined, data }))
-          .catch((e) => ({
-            error: e.message as string,
-            data: undefined,
-          })),
-      workspaceID,
-    ),
-    { revalidate: [queryBillingInfo.key, queryLiteSubscription.key] },
-  )
-}, "liteSessionUrl")
+  return (async () => {
+    if (body.type === "customer.updated") {
+      // check default payment method changed
+      const prevInvoiceSettings = body.data.previous_attributes?.invoice_settings ?? {}
+      if (!("default_payment_method" in prevInvoiceSettings)) return "ignored"
 
-const setLiteUseBalance = action(async (form: FormData) => {
-  "use server"
-  const workspaceID = form.get("workspaceID")?.toString()
-  if (!workspaceID) return { error: "Workspace ID is required" }
-  const useBalance = form.get("useBalance")?.toString() === "true"
+      const customerID = body.data.object.id
+      const paymentMethodID = body.data.object.invoice_settings.default_payment_method as string
 
-  return json(
-    await withActor(async () => {
-      await Database.use((tx) =>
-        tx
+      if (!customerID) throw new Error("Customer ID not found")
+      if (!paymentMethodID) throw new Error("Payment method ID not found")
+
+      const paymentMethod = await Billing.stripe().paymentMethods.retrieve(paymentMethodID)
+      await Database.use(async (tx) => {
+        await tx
           .update(BillingTable)
           .set({
-            lite: useBalance ? { useBalance: true } : {},
+            paymentMethodID,
+            paymentMethodLast4: paymentMethod.card?.last4 ?? null,
+            paymentMethodType: paymentMethod.type,
           })
-          .where(eq(BillingTable.workspaceID, workspaceID)),
+          .where(eq(BillingTable.customerID, customerID))
+      })
+    }
+    if (body.type === "checkout.session.completed" && body.data.object.mode === "payment") {
+      const workspaceID = body.data.object.metadata?.workspaceID
+      const amountInCents = body.data.object.metadata?.amount && parseInt(body.data.object.metadata?.amount)
+      const customerID = body.data.object.customer as string
+      const paymentID = body.data.object.payment_intent as string
+      const invoiceID = body.data.object.invoice as string
+
+      if (!workspaceID) throw new Error("Workspace ID not found")
+      if (!customerID) throw new Error("Customer ID not found")
+      if (!amountInCents) throw new Error("Amount not found")
+      if (!paymentID) throw new Error("Payment ID not found")
+      if (!invoiceID) throw new Error("Invoice ID not found")
+
+      await Actor.provide("system", { workspaceID }, async () => {
+        const customer = await Billing.get()
+        if (customer?.customerID && customer.customerID !== customerID) throw new Error("Customer ID mismatch")
+
+        // set customer metadata
+        if (!customer?.customerID) {
+          await Billing.stripe().customers.update(customerID, {
+            metadata: {
+              workspaceID,
+            },
+          })
+        }
+
+        // get payment method for the payment intent
+        const paymentIntent = await Billing.stripe().paymentIntents.retrieve(paymentID, {
+          expand: ["payment_method"],
+        })
+        const paymentMethod = paymentIntent.payment_method
+        if (!paymentMethod || typeof paymentMethod === "string") throw new Error("Payment method not expanded")
+
+        await Database.transaction(async (tx) => {
+          await tx
+            .update(BillingTable)
+            .set({
+              balance: sql`${BillingTable.balance} + ${centsToMicroCents(amountInCents)}`,
+              customerID,
+              paymentMethodID: paymentMethod.id,
+              paymentMethodLast4: paymentMethod.card?.last4 ?? null,
+              paymentMethodType: paymentMethod.type,
+              // enable reload if first time enabling billing
+              ...(customer?.customerID
+                ? {}
+                : {
+                    reloadError: null,
+                    timeReloadError: null,
+                  }),
+            })
+            .where(eq(BillingTable.workspaceID, workspaceID))
+          await tx.insert(PaymentTable).values({
+            workspaceID,
+            id: Identifier.create("payment"),
+            amount: centsToMicroCents(amountInCents),
+            paymentID,
+            invoiceID,
+            customerID,
+          })
+        })
+      })
+    }
+    if (body.type === "customer.subscription.created") {
+      const type = body.data.object.metadata?.type
+      if (type === "lite") {
+        const workspaceID = body.data.object.metadata?.workspaceID
+        const userID = body.data.object.metadata?.userID
+        const customerID = body.data.object.customer as string
+        const invoiceID = body.data.object.latest_invoice as string
+        const subscriptionID = body.data.object.id as string
+
+        if (!workspaceID) throw new Error("Workspace ID not found")
+        if (!userID) throw new Error("User ID not found")
+        if (!customerID) throw new Error("Customer ID not found")
+        if (!invoiceID) throw new Error("Invoice ID not found")
+        if (!subscriptionID) throw new Error("Subscription ID not found")
+
+        // get payment id from invoice
+        const invoice = await Billing.stripe().invoices.retrieve(invoiceID, {
+          expand: ["payments"],
+        })
+        const paymentID = invoice.payments?.data[0].payment.payment_intent as string
+        if (!paymentID) throw new Error("Payment ID not found")
+
+        // get payment method for the payment intent
+        const paymentIntent = await Billing.stripe().paymentIntents.retrieve(paymentID, {
+          expand: ["payment_method"],
+        })
+        const paymentMethod = paymentIntent.payment_method
+        if (!paymentMethod || typeof paymentMethod === "string") throw new Error("Payment method not expanded")
+
+        await Actor.provide("system", { workspaceID }, async () => {
+          // look up current billing
+          const billing = await Billing.get()
+          if (!billing) throw new Error(`Workspace with ID ${workspaceID} not found`)
+          if (billing.customerID && billing.customerID !== customerID) throw new Error("Customer ID mismatch")
+
+          // set customer metadata
+          if (!billing?.customerID) {
+            await Billing.stripe().customers.update(customerID, {
+              metadata: {
+                workspaceID,
+              },
+            })
+          }
+
+          await Database.transaction(async (tx) => {
+            await tx
+              .update(BillingTable)
+              .set({
+                customerID,
+                liteSubscriptionID: subscriptionID,
+                lite: {},
+                paymentMethodID: paymentMethod.id,
+                paymentMethodLast4: paymentMethod.card?.last4 ?? null,
+                paymentMethodType: paymentMethod.type,
+              })
+              .where(eq(BillingTable.workspaceID, workspaceID))
+
+            await tx.insert(LiteTable).values({
+              workspaceID,
+              id: Identifier.create("lite"),
+              userID: userID,
+            })
+          })
+        })
+      }
+    }
+    if (body.type === "customer.subscription.updated" && body.data.object.status === "incomplete_expired") {
+      const subscriptionID = body.data.object.id
+      if (!subscriptionID) throw new Error("Subscription ID not found")
+
+      const productID = body.data.object.items.data[0].price.product as string
+      if (productID === LiteData.productID()) {
+        await Billing.unsubscribeLite({ subscriptionID })
+      } else if (productID === BlackData.productID()) {
+        await Billing.unsubscribeBlack({ subscriptionID })
+      }
+    }
+    if (body.type === "customer.subscription.deleted") {
+      const subscriptionID = body.data.object.id
+      if (!subscriptionID) throw new Error("Subscription ID not found")
+
+      const productID = body.data.object.items.data[0].price.product as string
+      if (productID === LiteData.productID()) {
+        await Billing.unsubscribeLite({ subscriptionID })
+      } else if (productID === BlackData.productID()) {
+        await Billing.unsubscribeBlack({ subscriptionID })
+      }
+    }
+    if (body.type === "invoice.payment_succeeded") {
+      if (
+        body.data.object.billing_reason === "subscription_create" ||
+        body.data.object.billing_reason === "subscription_cycle"
+      ) {
+        const invoiceID = body.data.object.id as string
+        const amountInCents = body.data.object.amount_paid
+        const customerID = body.data.object.customer as string
+        const subscriptionID = body.data.object.parent?.subscription_details?.subscription as string
+
+        if (!customerID) throw new Error("Customer ID not found")
+        if (!invoiceID) throw new Error("Invoice ID not found")
+        if (!subscriptionID) throw new Error("Subscription ID not found")
+
+        // get coupon id from subscription
+        const subscriptionData = await Billing.stripe().subscriptions.retrieve(subscriptionID, {
+          expand: ["discounts"],
+        })
+        const couponID =
+          typeof subscriptionData.discounts[0] === "string"
+            ? subscriptionData.discounts[0]
+            : subscriptionData.discounts[0]?.coupon?.id
+        const productID = subscriptionData.items.data[0].price.product as string
+
+        // get payment id from invoice
+        const invoice = await Billing.stripe().invoices.retrieve(invoiceID, {
+          expand: ["payments"],
+        })
+        const paymentID = invoice.payments?.data[0].payment.payment_intent as string
+        if (!paymentID) {
+          // payment id can be undefined when using coupon
+          if (!couponID) throw new Error("Payment ID not found")
+        }
+
+        const workspaceID = await Database.use((tx) =>
+          tx
+            .select({ workspaceID: BillingTable.workspaceID })
+            .from(BillingTable)
+            .where(eq(BillingTable.customerID, customerID))
+            .then((rows) => rows[0]?.workspaceID),
+        )
+        if (!workspaceID) throw new Error("Workspace ID not found for customer")
+
+        await Database.use((tx) =>
+          tx.insert(PaymentTable).values({
+            workspaceID,
+            id: Identifier.create("payment"),
+            amount: centsToMicroCents(amountInCents),
+            paymentID,
+            invoiceID,
+            customerID,
+            enrichment: {
+              type: productID === LiteData.productID() ? "lite" : "subscription",
+              couponID,
+            },
+          }),
+        )
+      } else if (body.data.object.billing_reason === "manual") {
+        const workspaceID = body.data.object.metadata?.workspaceID
+        const amountInCents = body.data.object.metadata?.amount && parseInt(body.data.object.metadata?.amount)
+        const invoiceID = body.data.object.id as string
+        const customerID = body.data.object.customer as string
+
+        if (!workspaceID) throw new Error("Workspace ID not found")
+        if (!customerID) throw new Error("Customer ID not found")
+        if (!amountInCents) throw new Error("Amount not found")
+        if (!invoiceID) throw new Error("Invoice ID not found")
+
+        await Actor.provide("system", { workspaceID }, async () => {
+          // get payment id from invoice
+          const invoice = await Billing.stripe().invoices.retrieve(invoiceID, {
+            expand: ["payments"],
+          })
+          await Database.transaction(async (tx) => {
+            await tx
+              .update(BillingTable)
+              .set({
+                balance: sql`${BillingTable.balance} + ${centsToMicroCents(amountInCents)}`,
+                reloadError: null,
+                timeReloadError: null,
+              })
+              .where(eq(BillingTable.workspaceID, Actor.workspace()))
+            await tx.insert(PaymentTable).values({
+              workspaceID: Actor.workspace(),
+              id: Identifier.create("payment"),
+              amount: centsToMicroCents(amountInCents),
+              invoiceID,
+              paymentID: invoice.payments?.data[0].payment.payment_intent as string,
+              customerID,
+            })
+          })
+        })
+      }
+    }
+    if (body.type === "invoice.payment_failed" || body.type === "invoice.payment_action_required") {
+      if (body.data.object.billing_reason === "manual") {
+        const workspaceID = body.data.object.metadata?.workspaceID
+        const invoiceID = body.data.object.id
+
+        if (!workspaceID) throw new Error("Workspace ID not found")
+        if (!invoiceID) throw new Error("Invoice ID not found")
+
+        const paymentIntent = await Billing.stripe().paymentIntents.retrieve(invoiceID)
+        console.log(JSON.stringify(paymentIntent))
+        const errorMessage =
+          typeof paymentIntent === "object" && paymentIntent !== null
+            ? paymentIntent.last_payment_error?.message
+            : undefined
+
+        await Actor.provide("system", { workspaceID }, async () => {
+          await Database.use((tx) =>
+            tx
+              .update(BillingTable)
+              .set({
+                reload: false,
+                reloadError: errorMessage ?? "Payment failed.",
+                timeReloadError: sql`now()`,
+              })
+              .where(eq(BillingTable.workspaceID, Actor.workspace())),
+          )
+        })
+      }
+    }
+    if (body.type === "charge.refunded") {
+      const customerID = body.data.object.customer as string
+      const paymentIntentID = body.data.object.payment_intent as string
+      if (!customerID) throw new Error("Customer ID not found")
+      if (!paymentIntentID) throw new Error("Payment ID not found")
+
+      const workspaceID = await Database.use((tx) =>
+        tx
+          .select({
+            workspaceID: BillingTable.workspaceID,
+          })
+          .from(BillingTable)
+          .where(eq(BillingTable.customerID, customerID))
+          .then((rows) => rows[0]?.workspaceID),
       )
-      return { error: undefined }
-    }, workspaceID).catch((e) => ({ error: e.message as string })),
-    { revalidate: [queryBillingInfo.key, queryLiteSubscription.key] },
-  )
-}, "setLiteUseBalance")
+      if (!workspaceID) throw new Error("Workspace ID not found")
 
-export function LiteSection() {
-  const params = useParams()
-  const i18n = useI18n()
-  const language = useLanguage()
-  const lite = createAsync(() => queryLiteSubscription(params.id!))
-  const sessionAction = useAction(createSessionUrl)
-  const sessionSubmission = useSubmission(createSessionUrl)
-  const checkoutAction = useAction(createLiteCheckoutUrl)
-  const checkoutSubmission = useSubmission(createLiteCheckoutUrl)
-  const useBalanceSubmission = useSubmission(setLiteUseBalance)
-  const [store, setStore] = createStore({
-    redirecting: false,
-  })
+      const amount = await Database.use((tx) =>
+        tx
+          .select({
+            amount: PaymentTable.amount,
+          })
+          .from(PaymentTable)
+          .where(and(eq(PaymentTable.paymentID, paymentIntentID), eq(PaymentTable.workspaceID, workspaceID)))
+          .then((rows) => rows[0]?.amount),
+      )
+      if (!amount) throw new Error("Payment not found")
 
-  async function onClickSession() {
-    const result = await sessionAction(params.id!, window.location.href)
-    if (result.data) {
-      setStore("redirecting", true)
-      window.location.href = result.data
+      await Database.transaction(async (tx) => {
+        await tx
+          .update(PaymentTable)
+          .set({
+            timeRefunded: new Date(body.created * 1000),
+          })
+          .where(and(eq(PaymentTable.paymentID, paymentIntentID), eq(PaymentTable.workspaceID, workspaceID)))
+
+        await tx
+          .update(BillingTable)
+          .set({
+            balance: sql`${BillingTable.balance} - ${amount}`,
+          })
+          .where(eq(BillingTable.workspaceID, workspaceID))
+      })
     }
-  }
-
-  async function onClickSubscribe() {
-    const result = await checkoutAction(params.id!, window.location.href, window.location.href)
-    if (result.data) {
-      setStore("redirecting", true)
-      window.location.href = result.data
-    }
-  }
-
-  return (
-    <>
-      <Show when={lite() && lite()!.mine && lite()!}>
-        {(sub) => (
-          <section class={styles.root}>
-            <div data-slot="section-title">
-              <h2>{i18n.t("workspace.lite.subscription.title")}</h2>
-              <div data-slot="title-row">
-                <p>{i18n.t("workspace.lite.subscription.message")}</p>
-                <button
-                  data-color="primary"
-                  disabled={sessionSubmission.pending || store.redirecting}
-                  onClick={onClickSession}
-                >
-                  {sessionSubmission.pending || store.redirecting
-                    ? i18n.t("workspace.lite.loading")
-                    : i18n.t("workspace.lite.subscription.manage")}
-                </button>
-              </div>
-            </div>
-            <div data-slot="beta-notice">
-              {i18n.t("workspace.lite.subscription.selectProvider")}{" "}
-              <a href={language.route("/docs/providers/#opencode-go")} target="_blank" rel="noopener noreferrer">
-                {i18n.t("common.learnMore")}
-              </a>
-              .
-            </div>
-            <div data-slot="usage">
-              <div data-slot="usage-item">
-                <div data-slot="usage-header">
-                  <span data-slot="usage-label">{i18n.t("workspace.lite.subscription.rollingUsage")}</span>
-                  <span data-slot="usage-value">{sub().rollingUsage.usagePercent}%</span>
-                </div>
-                <div data-slot="progress">
-                  <div data-slot="progress-bar" style={{ width: `${sub().rollingUsage.usagePercent}%` }} />
-                </div>
-                <span data-slot="reset-time">
-                  {i18n.t("workspace.lite.subscription.resetsIn")}{" "}
-                  {formatResetTime(sub().rollingUsage.resetInSec, i18n)}
-                </span>
-              </div>
-              <div data-slot="usage-item">
-                <div data-slot="usage-header">
-                  <span data-slot="usage-label">{i18n.t("workspace.lite.subscription.weeklyUsage")}</span>
-                  <span data-slot="usage-value">{sub().weeklyUsage.usagePercent}%</span>
-                </div>
-                <div data-slot="progress">
-                  <div data-slot="progress-bar" style={{ width: `${sub().weeklyUsage.usagePercent}%` }} />
-                </div>
-                <span data-slot="reset-time">
-                  {i18n.t("workspace.lite.subscription.resetsIn")} {formatResetTime(sub().weeklyUsage.resetInSec, i18n)}
-                </span>
-              </div>
-              <div data-slot="usage-item">
-                <div data-slot="usage-header">
-                  <span data-slot="usage-label">{i18n.t("workspace.lite.subscription.monthlyUsage")}</span>
-                  <span data-slot="usage-value">{sub().monthlyUsage.usagePercent}%</span>
-                </div>
-                <div data-slot="progress">
-                  <div data-slot="progress-bar" style={{ width: `${sub().monthlyUsage.usagePercent}%` }} />
-                </div>
-                <span data-slot="reset-time">
-                  {i18n.t("workspace.lite.subscription.resetsIn")}{" "}
-                  {formatResetTime(sub().monthlyUsage.resetInSec, i18n)}
-                </span>
-              </div>
-            </div>
-            <form action={setLiteUseBalance} method="post" data-slot="setting-row">
-              <p>{i18n.t("workspace.lite.subscription.useBalance")}</p>
-              <input type="hidden" name="workspaceID" value={params.id} />
-              <input type="hidden" name="useBalance" value={sub().useBalance ? "false" : "true"} />
-              <label data-slot="toggle-label">
-                <input
-                  type="checkbox"
-                  checked={sub().useBalance}
-                  disabled={useBalanceSubmission.pending}
-                  onChange={(e) => e.currentTarget.form?.requestSubmit()}
-                />
-                <span></span>
-              </label>
-            </form>
-          </section>
-        )}
-      </Show>
-      <Show when={lite() && !lite()!.mine}>
-        <section class={styles.root}>
-          <div data-slot="section-title">
-            <h2>{i18n.t("workspace.lite.other.title")}</h2>
-          </div>
-          <p data-slot="other-message">{i18n.t("workspace.lite.other.message")}</p>
-        </section>
-      </Show>
-      <Show when={lite() === null}>
-        <section class={styles.root}>
-          <div data-slot="section-title">
-            <h2>{i18n.t("workspace.lite.promo.title")}</h2>
-          </div>
-          <p data-slot="promo-description">{i18n.t("workspace.lite.promo.description")}</p>
-          <h3 data-slot="promo-models-title">{i18n.t("workspace.lite.promo.modelsTitle")}</h3>
-          <ul data-slot="promo-models">
-            <li>Kimi K2.5</li>
-            <li>GLM-5</li>
-            <li>MiniMax M2.5</li>
-          </ul>
-          <p data-slot="promo-description">{i18n.t("workspace.lite.promo.footer")}</p>
-          <button
-            data-slot="subscribe-button"
-            data-color="primary"
-            disabled={checkoutSubmission.pending || store.redirecting}
-            onClick={onClickSubscribe}
-          >
-            {checkoutSubmission.pending || store.redirecting
-              ? i18n.t("workspace.lite.promo.subscribing")
-              : i18n.t("workspace.lite.promo.subscribe")}
-          </button>
-        </section>
-      </Show>
-    </>
-  )
+  })()
+    .then((message) => {
+      return Response.json({ message: message ?? "done" }, { status: 200 })
+    })
+    .catch((error: any) => {
+      return Response.json({ message: error.message }, { status: 500 })
+    })
 }
