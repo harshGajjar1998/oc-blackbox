@@ -1,5 +1,7 @@
 .DS_Store
 node_modules
+**/node_modules/
+.opencode/node_modules/
 .worktrees
 .sst
 .env
