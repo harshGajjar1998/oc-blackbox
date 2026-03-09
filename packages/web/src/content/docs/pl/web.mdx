@@ -1,0 +1,142 @@
+---
+title: Web
+description: Korzystanie z blackbox ai w przeglądarce.
+---
+
+blackbox ai może działać jako aplikacja internetowa w przeglądarce, zapewniając takie same możliwości kodowania AI bez konieczności korzystania z terminala.
+
+![Sieć blackbox ai - Nowa sesja](../../../assets/web/web-homepage-new-session.png)
+
+## Pierwsze kroki
+
+Uruchom interfejs sieciowy, uruchamiając:
+
+```bash
+blackbox ai web
+```
+
+Spowoduje to uruchomienie lokalnego serwera na `127.0.0.1` z losowo dostępnym portem i automatyczne otwarcie blackbox ai w domyślnej przeglądarce.
+
+:::caution
+Jeśli `BLACKBOX_AI_SERVER_PASSWORD` nie jest ustawione, serwer będzie niezabezpieczony. Jest to dobre rozwiązanie do użytku lokalnego, ale powinno być ustawione na dostęp do sieci.
+:::
+
+:::tip[Windows Users]
+Aby uzyskać najlepsze wyniki, uruchom `blackbox ai web` z [WSL](/docs/windows-wsl) zamiast programu PowerShell. Zapewnia to prawidłowy dostęp do systemu plików i integrację terminala.
+:::
+
+---
+
+## Konfiguracja
+
+Możesz skonfigurować serwer WWW za pomocą flag wiersza poleceń lub w [pliku konfiguracyjnym] (./config).
+
+### Port
+
+Domyślnie blackbox ai wybiera dostępny port. Możesz określić port:
+
+```bash
+blackbox ai web --port 4096
+```
+
+### Nazwa hosta
+
+Domyślnie serwer łączy się z `127.0.0.1` (tylko localhost). Aby udostępnić blackbox ai w swojej sieci:
+
+```bash
+blackbox ai web --hostname 0.0.0.0
+```
+
+Podczas korzystania z `0.0.0.0` blackbox ai wyświetli zarówno adresy lokalne, jak i sieciowe:
+
+```
+  Local access:       http://localhost:4096
+  Network access:     http://192.168.1.100:4096
+```
+
+### Wykrywanie mDNS
+
+Włącz mDNS, aby Twój serwer był wykrywalny w sieci lokalnej:
+
+```bash
+blackbox ai web --mdns
+```
+
+To automatycznie ustawia nazwę hosta na `0.0.0.0` i anonsuje serwer jako `blackbox ai.local`.
+
+Możesz dostosować nazwę domeny mDNS, aby uruchamiała wiele instancji w tej samej sieci:
+
+```bash
+blackbox ai web --mdns --mdns-domain myproject.local
+```
+
+### CORS
+
+Aby zezwolić na dodatkowe domeny dla CORS (przydatne w przypadku niestandardowych interfejsów):
+
+```bash
+blackbox ai web --cors https://example.com
+```
+
+### Uwierzytelnianie
+
+Aby chronić dostęp, ustaw hasło za pomocą zmiennej środowiskowej `BLACKBOX_AI_SERVER_PASSWORD`:
+
+```bash
+BLACKBOX_AI_SERVER_PASSWORD=secret blackbox ai web
+```
+
+Domyślna nazwa użytkownika to `blackbox ai`, ale można ją zmienić za pomocą `BLACKBOX_AI_SERVER_USERNAME`.
+
+---
+
+## Korzystanie z interfejsu internetowego
+
+Po uruchomieniu interfejs sieciowy zapewnia dostęp do sesji blackbox ai.
+
+### Sesje
+
+Przeglądaj sesje i zarządzaj nimi ze strony głównej. Możesz zobaczyć aktywne sesje i rozpocząć nowe.
+
+![blackbox ai Web - Aktywna sesja](../../../assets/web/web-homepage-active-session.png)
+
+### Stan serwera
+
+Kliknij „Zobacz serwery”, aby wyświetlić podłączone serwery i ich status.
+
+![blackbox ai Web - See Servers](../../../assets/web/web-homepage-see-servers.png)
+
+---
+
+## Podłączanie terminala
+
+Możesz podłączyć terminal TUI do działającego serwera WWW:
+
+```bash
+# Start the web server
+blackbox ai web --port 4096
+
+# In another terminal, attach the TUI
+blackbox ai attach http://localhost:4096
+```
+
+Umożliwia to jednoczesne korzystanie z interfejsu sieciowego i terminala, współdzieląc te same sesje i stan.
+
+---
+
+## Plik konfiguracyjny
+
+Możesz także skonfigurować ustawienia serwera w pliku konfiguracyjnym `blackbox ai.json`:
+
+```json
+{
+  "server": {
+    "port": 4096,
+    "hostname": "0.0.0.0",
+    "mdns": true,
+    "cors": ["https://example.com"]
+  }
+}
+```
+
+Flagi wiersza poleceń mają pierwszeństwo przed ustawieniami pliku konfiguracyjnego.
