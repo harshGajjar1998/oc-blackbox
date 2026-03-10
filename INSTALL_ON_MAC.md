@@ -107,6 +107,54 @@ chmod +x ./src-tauri/target/release/bundle/macos/Blackbox\ AI\ Dev.app/Contents/
 open ./src-tauri/target/release/bundle/macos/Blackbox\ AI\ Dev.app
 ```
 
+### "Blackbox AI Dev is damaged and can't be opened" (Gatekeeper error)
+
+This happens when the DMG was downloaded via a browser (Safari/Chrome). macOS adds a quarantine flag to downloaded files, and since the app is not notarized with an Apple Developer certificate, Gatekeeper blocks it.
+
+**Quick fix — strip the quarantine attribute:**
+```bash
+# If installed to Applications:
+xattr -cr "/Applications/Blackbox AI Dev.app"
+
+# Then open normally:
+open "/Applications/Blackbox AI Dev.app"
+```
+
+**Alternative — open directly from the DMG** (without moving to Applications):
+```bash
+open /Volumes/Blackbox\ AI\ Dev/Blackbox\ AI\ Dev.app
+```
+
+**Build with ad-hoc signing** (for distributing to teammates):
+
+Use the provided `build-mac.sh` script from the project root instead of building manually:
+```bash
+# From the project root:
+./build-mac.sh
+```
+This builds the app AND ad-hoc signs it, which reduces (but does not eliminate) Gatekeeper friction. Recipients still need to run `xattr -cr` if they downloaded via browser.
+
+**Permanent fix — Apple Developer Code Signing** (for public distribution):
+
+To fully eliminate this error for all users, the app must be signed with an Apple Developer ID certificate and notarized:
+1. Enroll in the [Apple Developer Program](https://developer.apple.com/programs/) ($99/year)
+2. Create a **Developer ID Application** certificate in Xcode / Keychain
+3. Set these environment variables before building:
+   ```bash
+   export APPLE_SIGNING_IDENTITY="Developer ID Application: Your Name (TEAMID)"
+   export APPLE_ID="your@apple.id"
+   export APPLE_PASSWORD="xxxx-xxxx-xxxx-xxxx"  # App-specific password
+   export APPLE_TEAM_ID="YOURTEAMID"
+   ```
+4. Update `src-tauri/tauri.conf.json` — set `signingIdentity` to your certificate name:
+   ```json
+   "macOS": {
+     "entitlements": "./entitlements.plist",
+     "signingIdentity": "Developer ID Application: Your Name (TEAMID)"
+   }
+   ```
+5. Build normally: `bun run tauri build`
+
 ## File Locations
 
 After successful build:
