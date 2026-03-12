@@ -1,5 +1,5 @@
 ﻿import { defineConfig } from "vite"
-import appPlugin from "@blackbox-ai/app/vite"
+import appPlugin from "../app/vite.js"
 
 const host = process.env.TAURI_DEV_HOST
 
