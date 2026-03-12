@@ -3,7 +3,15 @@ import { decode64 } from "@/utils/base64"
 import { useParams } from "@solidjs/router"
 import { createMemo } from "solid-js"
 
-export const popularProviders = ["opencode", "anthropic", "github-copilot", "openai", "google", "openrouter", "vercel"]
+export const popularProviders = [
+  "blackboxai",
+  "anthropic",
+  "github-copilot",
+  "openai",
+  "google",
+  "openrouter",
+  "vercel",
+]
 const popularProviderSet = new Set(popularProviders)
 
 export function useProviders() {
@@ -13,9 +21,15 @@ export function useProviders() {
   const providers = createMemo(() => {
     if (currentDirectory()) {
       const [projectStore] = globalSync.child(currentDirectory())
-      return projectStore.provider
+      return {
+        ...projectStore.provider,
+        all: projectStore.provider.all.filter((p) => p.id !== "opencode"),
+      }
     }
-    return globalSync.data.provider
+    return {
+      ...globalSync.data.provider,
+      all: globalSync.data.provider.all.filter((p) => p.id !== "opencode"),
+    }
   })
   const connectedIDs = createMemo(() => new Set(providers().connected))
   const connected = createMemo(() => providers().all.filter((p) => connectedIDs().has(p.id)))

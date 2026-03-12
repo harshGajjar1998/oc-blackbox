@@ -6,6 +6,7 @@ use process_wrap::tokio::ProcessGroup;
 use process_wrap::tokio::{CommandWrapper, JobObject, KillOnDrop};
 #[cfg(unix)]
 use std::os::unix::process::ExitStatusExt;
+use std::path::PathBuf;
 use std::sync::Arc;
 use std::{process::Stdio, time::Duration};
 use tauri::{AppHandle, Manager, path::BaseDirectory};
@@ -232,6 +233,27 @@ fn shell_escape(input: &str) -> String {
     escaped
 }
 
+fn resolve_models_path(app: &AppHandle) -> Option<PathBuf> {
+    if let Ok(mut dir) = std::env::current_dir() {
+        loop {
+            let candidate = dir.join("model_list").join("models-merged.json");
+            if candidate.exists() {
+                return Some(candidate);
+            }
+
+            if !dir.pop() {
+                break;
+            }
+        }
+    }
+
+    get_sidecar_path(app)
+        .parent()
+        .map(std::path::Path::to_path_buf)
+        .map(|dir| dir.join("model_list").join("models-merged.json"))
+        .filter(|path| path.exists())
+}
+
 pub fn spawn_command(
     app: &tauri::AppHandle,
     args: &str,
@@ -241,6 +263,11 @@ pub fn spawn_command(
         .path()
         .resolve("", BaseDirectory::AppLocalData)
         .expect("Failed to resolve app local data dir");
+    let xdg_dir = state_dir.join("blackbox-ai");
+    let xdg_dir_str = xdg_dir.to_string_lossy().to_string();
+    let home_dir = xdg_dir.join("home");
+    let home_dir_str = home_dir.to_string_lossy().to_string();
+    let models_path = resolve_models_path(app);
 
     let mut envs = vec![
         (
@@ -253,10 +280,29 @@ pub fn spawn_command(
         ),
         ("OPENCODE_CLIENT".to_string(), "desktop".to_string()),
         (
-            "XDG_STATE_HOME".to_string(),
-            state_dir.to_string_lossy().to_string(),
+            "OPENCODE_DISABLE_PROJECT_CONFIG".to_string(),
+            "true".to_string(),
         ),
+        ("OPENCODE_TEST_HOME".to_string(), home_dir_str.clone()),
+        (
+            "XDG_STATE_HOME".to_string(),
+            xdg_dir_str.clone(),
+        ),
+        ("XDG_DATA_HOME".to_string(), xdg_dir_str.clone()),
+        ("XDG_CONFIG_HOME".to_string(), xdg_dir_str.clone()),
+        ("XDG_CACHE_HOME".to_string(), xdg_dir_str.clone()),
     ];
+    if let Some(path) = models_path {
+        tracing::info!(path = %path.display(), "Using local merged models file");
+        envs.push((
+            "OPENCODE_MODELS_PATH".to_string(),
+            path.to_string_lossy().to_string(),
+        ));
+        envs.push((
+            "OPENCODE_DISABLE_MODELS_FETCH".to_string(),
+            "true".to_string(),
+        ));
+    }
     envs.extend(
         extra_env
             .iter()
@@ -282,14 +328,26 @@ pub fn spawn_command(
                 "OPENCODE_EXPERIMENTAL_ICON_DISCOVERY=true".to_string(),
                 "OPENCODE_EXPERIMENTAL_FILEWATCHER=true".to_string(),
                 "OPENCODE_CLIENT=desktop".to_string(),
-                "XDG_STATE_HOME=\"$HOME/.local/state\"".to_string(),
+                "OPENCODE_DISABLE_PROJECT_CONFIG=true".to_string(),
+                "OPENCODE_TEST_HOME=\"$HOME/.blackbox-ai-home\"".to_string(),
+                "XDG_STATE_HOME=\"$HOME/.local/state/blackbox-ai\"".to_string(),
+                "XDG_DATA_HOME=\"$HOME/.local/share/blackbox-ai\"".to_string(),
+                "XDG_CONFIG_HOME=\"$HOME/.config/blackbox-ai\"".to_string(),
+                "XDG_CACHE_HOME=\"$HOME/.cache/blackbox-ai\"".to_string(),
             ];
             env_prefix.extend(
                 envs.iter()
                     .filter(|(key, _)| key != "OPENCODE_EXPERIMENTAL_ICON_DISCOVERY")
                     .filter(|(key, _)| key != "OPENCODE_EXPERIMENTAL_FILEWATCHER")
                     .filter(|(key, _)| key != "OPENCODE_CLIENT")
+                    .filter(|(key, _)| key != "OPENCODE_DISABLE_PROJECT_CONFIG")
+                    .filter(|(key, _)| key != "OPENCODE_TEST_HOME")
+                    .filter(|(key, _)| key != "OPENCODE_MODELS_PATH")
+                    .filter(|(key, _)| key != "OPENCODE_DISABLE_MODELS_FETCH")
                     .filter(|(key, _)| key != "XDG_STATE_HOME")
+                        .filter(|(key, _)| key != "XDG_DATA_HOME")
+                        .filter(|(key, _)| key != "XDG_CONFIG_HOME")
+                        .filter(|(key, _)| key != "XDG_CACHE_HOME")
                     .map(|(key, value)| format!("{}={}", key, shell_escape(value))),
             );
 

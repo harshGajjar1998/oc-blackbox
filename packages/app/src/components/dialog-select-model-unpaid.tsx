@@ -6,7 +6,7 @@ import { List, type ListRef } from "@blackbox-ai/ui/list"
 import { ProviderIcon } from "@blackbox-ai/ui/provider-icon"
 import { Tag } from "@blackbox-ai/ui/tag"
 import { Tooltip } from "@blackbox-ai/ui/tooltip"
-import { type Component, Show } from "solid-js"
+import { type Component, Show, createMemo } from "solid-js"
 import { useLocal } from "@/context/local"
 import { popularProviders, useProviders } from "@/hooks/use-providers"
 import { DialogConnectProvider } from "./dialog-connect-provider"
@@ -19,6 +19,17 @@ export const DialogSelectModelUnpaid: Component = () => {
   const dialog = useDialog()
   const providers = useProviders()
   const language = useLanguage()
+  const freeModels = createMemo(() =>
+    local
+      .model
+      .list()
+      .filter((model) => model.provider.id === "blackboxai")
+      .filter((model) => {
+        const id = model.id.toLowerCase()
+        const name = model.name.toLowerCase()
+        return id.includes("minimax-m2.5") || name.includes("minimax m2.5")
+      }),
+  )
 
   let listRef: ListRef | undefined
   const handleKeyDown = (e: KeyboardEvent) => {
@@ -36,7 +47,7 @@ export const DialogSelectModelUnpaid: Component = () => {
         <List
           class="[&_[data-slot=list-scroll]]:overflow-visible"
           ref={(ref) => (listRef = ref)}
-          items={local.model.list}
+          items={freeModels}
           current={local.model.current()}
           key={(x) => `${x.provider.id}:${x.id}`}
           itemWrapper={(item, node) => (
@@ -48,7 +59,7 @@ export const DialogSelectModelUnpaid: Component = () => {
                 <ModelTooltip
                   model={item}
                   latest={item.latest}
-                  free={item.provider.id === "opencode" && (!item.cost || item.cost.input === 0)}
+                  free={item.provider.id === "blackboxai" && item.id.toLowerCase().includes("minimax-m2.5")}
                 />
               }
             >
@@ -64,7 +75,7 @@ export const DialogSelectModelUnpaid: Component = () => {
         >
           {(i) => (
             <div class="w-full flex items-center gap-x-2.5">
-              <span>{i.name}</span>
+              <span>{i.id.toLowerCase().includes("minimax-m2.5") ? "Minimax M2.5" : i.name}</span>
               <Tag>{language.t("model.tag.free")}</Tag>
               <Show when={i.latest}>
                 <Tag>{language.t("model.tag.latest")}</Tag>
@@ -97,7 +108,7 @@ export const DialogSelectModelUnpaid: Component = () => {
                   <div class="w-full flex items-center gap-x-3">
                     <ProviderIcon data-slot="list-item-extra-icon" id={i.id as IconName} />
                     <span>{i.name}</span>
-                    <Show when={i.id === "opencode"}>
+                    <Show when={i.id === "blackboxai"}>
                       <Tag>{language.t("dialog.provider.tag.recommended")}</Tag>
                     </Show>
                     <Show when={i.id === "anthropic"}>
