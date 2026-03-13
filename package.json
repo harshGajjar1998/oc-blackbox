@@ -8,6 +8,7 @@
   "scripts": {
     "dev": "bun run --cwd packages/opencode --conditions=browser src/index.ts",
     "dev:desktop": "bun --cwd packages/desktop tauri dev",
+    "doctor:desktop": "bun --cwd packages/desktop ./scripts/doctor.ts",
     "dev:web": "bun --cwd packages/app dev",
     "typecheck": "bun turbo typecheck",
     "prepare": "husky",

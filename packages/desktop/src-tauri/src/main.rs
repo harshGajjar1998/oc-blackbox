@@ -1,6 +1,22 @@
 // Prevents additional console window on Windows in release, DO NOT REMOVE!!
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
+#[cfg(target_os = "windows")]
+fn set_windows_app_id() {
+    use windows_sys::Win32::UI::Shell::SetCurrentProcessExplicitAppUserModelID;
+
+    let app_id = if cfg!(debug_assertions) {
+        "ai.blackbox.desktop.dev"
+    } else {
+        "ai.blackbox.desktop"
+    };
+
+    let mut wide = app_id.encode_utf16().collect::<Vec<_>>();
+    wide.push(0);
+
+    let _ = unsafe { SetCurrentProcessExplicitAppUserModelID(wide.as_ptr()) };
+}
+
 // borrowed from https://github.com/skyline69/balatro-mod-manager
 #[cfg(target_os = "linux")]
 fn configure_display_backend() -> Option<String> {
@@ -40,6 +56,9 @@ fn configure_display_backend() -> Option<String> {
 }
 
 fn main() {
+    #[cfg(target_os = "windows")]
+    set_windows_app_id();
+
     // Ensure loopback connections are never sent through proxy settings.
     // Some VPNs/proxies set HTTP_PROXY/HTTPS_PROXY/ALL_PROXY without excluding localhost.
     const LOOPBACK: [&str; 3] = ["127.0.0.1", "localhost", "::1"];

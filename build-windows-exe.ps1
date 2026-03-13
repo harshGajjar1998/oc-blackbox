@@ -24,7 +24,8 @@ if (-not (Get-Command "cl.exe" -ErrorAction SilentlyContinue)) {
 }
 
 Write-Host "[2/5] Moving to repository root..." -ForegroundColor Cyan
-Set-Location "C:\Users\Pavitra\Desktop\sandbox\oc-blackbox"
+$repoRoot = Split-Path -Parent $PSCommandPath
+Set-Location $repoRoot
 
 Write-Host "[3/5] Installing dependencies..." -ForegroundColor Cyan
 bun install

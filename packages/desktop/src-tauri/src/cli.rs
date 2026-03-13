@@ -40,6 +40,7 @@ impl CommandWrapper for WinCreationFlags {
 
 const CLI_INSTALL_DIR: &str = ".opencode/bin";
 const CLI_BINARY_NAME: &str = "opencode";
+const EMBEDDED_MODELS_MERGED: &str = include_str!("../../../../model_list/models-merged.json");
 
 #[derive(serde::Deserialize, Debug)]
 pub struct ServerConfig {
@@ -247,11 +248,46 @@ fn resolve_models_path(app: &AppHandle) -> Option<PathBuf> {
         }
     }
 
-    get_sidecar_path(app)
+    let mut candidates = Vec::<PathBuf>::new();
+
+    if let Some(sidecar_dir) = get_sidecar_path(app)
         .parent()
         .map(std::path::Path::to_path_buf)
-        .map(|dir| dir.join("model_list").join("models-merged.json"))
-        .filter(|path| path.exists())
+    {
+        candidates.push(sidecar_dir.join("model_list").join("models-merged.json"));
+        candidates.push(sidecar_dir.join("models-merged.json"));
+    }
+
+    if let Ok(path) = app
+        .path()
+        .resolve("model_list/models-merged.json", BaseDirectory::Resource)
+    {
+        candidates.push(path);
+    }
+
+    if let Ok(path) = app
+        .path()
+        .resolve("models-merged.json", BaseDirectory::Resource)
+    {
+        candidates.push(path);
+    }
+
+    if let Some(path) = candidates.into_iter().find(|path| path.exists()) {
+        return Some(path);
+    }
+
+    let app_local = app.path().resolve("", BaseDirectory::AppLocalData).ok()?;
+    let models_path = app_local.join("model_list").join("models-merged.json");
+
+    if models_path.exists() {
+        return Some(models_path);
+    }
+
+    let parent = models_path.parent()?.to_path_buf();
+    std::fs::create_dir_all(parent).ok()?;
+    std::fs::write(&models_path, EMBEDDED_MODELS_MERGED).ok()?;
+
+    Some(models_path)
 }
 
 pub fn spawn_command(

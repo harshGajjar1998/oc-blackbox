@@ -16,7 +16,7 @@ import { readImage } from "@tauri-apps/plugin-clipboard-manager"
 import { getCurrent, onOpenUrl } from "@tauri-apps/plugin-deep-link"
 import { open, save } from "@tauri-apps/plugin-dialog"
 import { fetch as tauriFetch } from "@tauri-apps/plugin-http"
-import { isPermissionGranted, requestPermission } from "@tauri-apps/plugin-notification"
+import { isPermissionGranted, requestPermission, sendNotification } from "@tauri-apps/plugin-notification"
 import { openPath as openerOpenPath } from "@tauri-apps/plugin-opener"
 import { type as ostype } from "@tauri-apps/plugin-os"
 import { relaunch } from "@tauri-apps/plugin-process"
@@ -322,26 +322,31 @@ const createPlatform = (): Platform => {
       const permission = granted ? "granted" : await requestPermission().catch(() => "denied")
       if (permission !== "granted") return
 
+      const os = ostype()
+
       const win = getCurrentWindow()
       const focused = await win.isFocused().catch(() => document.hasFocus())
       if (focused) return
 
-      await Promise.resolve()
-        .then(() => {
-          const notification = new Notification(title, {
-            body: description ?? "",
-            icon: "https://opencode.ai/favicon-96x96-v3.png",
-          })
-          notification.onclick = () => {
-            const win = getCurrentWindow()
-            void win.show().catch(() => undefined)
-            void win.unminimize().catch(() => undefined)
-            void win.setFocus().catch(() => undefined)
-            handleNotificationClick(href)
-            notification.close()
-          }
+      await sendNotification({
+        title,
+        body: description ?? "",
+      }).catch(async () => {
+        if (os === "windows") return
+
+        const notification = new Notification(title, {
+          body: description ?? "",
+          icon: "https://blackbox.ai/favicon.ico",
         })
-        .catch(() => undefined)
+        notification.onclick = () => {
+          const win = getCurrentWindow()
+          void win.show().catch(() => undefined)
+          void win.unminimize().catch(() => undefined)
+          void win.setFocus().catch(() => undefined)
+          handleNotificationClick(href)
+          notification.close()
+        }
+      })
     },
 
     fetch: (input, init) => {
