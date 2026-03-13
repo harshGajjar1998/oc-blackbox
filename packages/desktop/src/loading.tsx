@@ -61,7 +61,7 @@ render(() => {
 
   return (
     <MetaProvider>
-      <div class="w-screen h-screen bg-background-base flex items-center justify-center">
+      <div class="w-screen h-screen flex items-center justify-center" style="background-color: #131010">
         <Font />
         <div class="flex flex-col items-center gap-11">
           <Splash class="w-20 h-25 opacity-15" />

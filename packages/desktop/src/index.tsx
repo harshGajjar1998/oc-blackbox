@@ -330,7 +330,7 @@ const createPlatform = (): Platform => {
         .then(() => {
           const notification = new Notification(title, {
             body: description ?? "",
-            icon: "https://opencode.ai/favicon-96x96-v3.png",
+            icon: "https://blackbox.ai/favicon-96x96-v3.png",
           })
           notification.onclick = () => {
             const win = getCurrentWindow()
@@ -497,7 +497,7 @@ function ServerGate(props: { children: (data: ServerReadyData) => JSX.Element })
     <Show
       when={serverData.state !== "pending" && serverData()}
       fallback={
-        <div class="h-screen w-screen flex flex-col items-center justify-center bg-background-base">
+        <div class="h-screen w-screen flex flex-col items-center justify-center" style="background-color: #131010">
           <Splash class="w-16 h-20 opacity-50 animate-pulse" />
           <div data-tauri-decorum-tb class="flex flex-row absolute top-0 right-0 z-10 h-10" />
         </div>
