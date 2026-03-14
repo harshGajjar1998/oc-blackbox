@@ -1,8 +1,8 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "Blackbox Dev",
+  "productName": "Blackbox Ai Desktop",
   "identifier": "ai.blackbox.desktop.dev",
-  "mainBinaryName": "Blackbox",
+  "mainBinaryName": "BlackboxAiDesktop",
   "version": "../package.json",
   "build": {
     "beforeDevCommand": "bun run dev",
@@ -34,6 +34,7 @@
     "active": true,
     "targets": ["deb", "rpm", "dmg", "nsis", "app"],
     "externalBin": ["sidecars/opencode-cli"],
+    "resources": ["../../../model_list/models-merged.json"],
     "linux": {
       "rpm": {
         "compression": {

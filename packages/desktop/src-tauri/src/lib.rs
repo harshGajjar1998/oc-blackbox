@@ -327,6 +327,11 @@ pub fn run() {
         .setup(move |app| {
             let handle = app.handle().clone();
 
+            #[cfg(target_os = "windows")]
+            {
+                let _ = crate::os::windows::set_current_process_app_id(&app.config().identifier);
+            }
+
             let log_dir = app
                 .path()
                 .app_log_dir()

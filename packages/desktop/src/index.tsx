@@ -11,12 +11,13 @@ import {
 } from "@blackbox-ai/app"
 import { Splash } from "@blackbox-ai/ui/logo"
 import type { AsyncStorage } from "@solid-primitives/storage"
+import { Channel } from "@tauri-apps/api/core"
 import { getCurrentWindow } from "@tauri-apps/api/window"
 import { readImage } from "@tauri-apps/plugin-clipboard-manager"
 import { getCurrent, onOpenUrl } from "@tauri-apps/plugin-deep-link"
 import { open, save } from "@tauri-apps/plugin-dialog"
 import { fetch as tauriFetch } from "@tauri-apps/plugin-http"
-import { isPermissionGranted, requestPermission } from "@tauri-apps/plugin-notification"
+import { isPermissionGranted, requestPermission, sendNotification } from "@tauri-apps/plugin-notification"
 import { openPath as openerOpenPath } from "@tauri-apps/plugin-opener"
 import { type as ostype } from "@tauri-apps/plugin-os"
 import { relaunch } from "@tauri-apps/plugin-process"
@@ -26,13 +27,12 @@ import { check, type Update } from "@tauri-apps/plugin-updater"
 import { createResource, type JSX, onCleanup, onMount, Show } from "solid-js"
 import { render } from "solid-js/web"
 import pkg from "../package.json"
+import { commands, ServerReadyData, type InitStep } from "./bindings"
 import { initI18n, t } from "./i18n"
+import { createMenu } from "./menu"
+import "./styles.css"
 import { UPDATER_ENABLED } from "./updater"
 import { webviewZoom } from "./webview-zoom"
-import "./styles.css"
-import { Channel } from "@tauri-apps/api/core"
-import { commands, ServerReadyData, type InitStep } from "./bindings"
-import { createMenu } from "./menu"
 
 const root = document.getElementById("root")
 if (import.meta.env.DEV && !(root instanceof HTMLElement)) {
@@ -115,6 +115,7 @@ const createPlatform = (): Platform => {
     openLink(url: string) {
       void shellOpen(url).catch(() => undefined)
     },
+
     async openPath(path: string, app?: string) {
       const os = ostype()
       if (os === "windows") {
@@ -124,7 +125,6 @@ const createPlatform = (): Platform => {
             const converted = await commands.wslPath(path, "windows").catch(() => null)
             if (converted) return converted
           }
-
           return path
         })()
         return openerOpenPath(resolvedPath, resolvedApp)
@@ -151,7 +151,6 @@ const createPlatform = (): Platform => {
       }
 
       const WRITE_DEBOUNCE_MS = 250
-
       const storeCache = new Map<string, Promise<StoreLike>>()
       const apiCache = new Map<string, AsyncStorage & { flush: () => Promise<void> }>()
       const memoryCache = new Map<string, StoreLike>()
@@ -195,9 +194,8 @@ const createPlatform = (): Platform => {
         if (cached) return cached
 
         const store = Store.load(name).catch(() => {
-          const cached = memoryCache.get(name)
-          if (cached) return cached
-
+          const cachedMemory = memoryCache.get(name)
+          if (cachedMemory) return cachedMemory
           const memory = createMemoryStore()
           memoryCache.set(name, memory)
           return memory
@@ -248,7 +246,6 @@ const createPlatform = (): Platform => {
           getItem: async (key: string) => {
             const next = pending.get(key)
             if (next !== undefined) return next
-
             const store = await getStore(name)
             const value = await store.get(key).catch(() => null)
             if (value === undefined) return null
@@ -286,7 +283,6 @@ const createPlatform = (): Platform => {
       return (name = "default.dat") => {
         const cached = apiCache.get(name)
         if (cached) return cached
-
         const api = createStorage(name)
         apiCache.set(name, api)
         return api
@@ -322,34 +318,37 @@ const createPlatform = (): Platform => {
       const permission = granted ? "granted" : await requestPermission().catch(() => "denied")
       if (permission !== "granted") return
 
+      const os = ostype()
       const win = getCurrentWindow()
       const focused = await win.isFocused().catch(() => document.hasFocus())
       if (focused) return
 
-      await Promise.resolve()
-        .then(() => {
-          const notification = new Notification(title, {
-            body: description ?? "",
-            icon: "https://blackbox.ai/favicon-96x96-v3.png",
-          })
-          notification.onclick = () => {
-            const win = getCurrentWindow()
-            void win.show().catch(() => undefined)
-            void win.unminimize().catch(() => undefined)
-            void win.setFocus().catch(() => undefined)
-            handleNotificationClick(href)
-            notification.close()
-          }
+      try {
+        await sendNotification({
+          title,
+          body: description ?? "",
         })
-        .catch(() => undefined)
+      } catch {
+        if (os === "windows") return
+
+        const notification = new Notification(title, {
+          body: description ?? "",
+          icon: "https://blackbox.ai/favicon.ico",
+        })
+        notification.onclick = () => {
+          const current = getCurrentWindow()
+          void current.show().catch(() => undefined)
+          void current.unminimize().catch(() => undefined)
+          void current.setFocus().catch(() => undefined)
+          handleNotificationClick(href)
+          notification.close()
+        }
+      }
     },
 
     fetch: (input, init) => {
-      if (input instanceof Request) {
-        return tauriFetch(input)
-      } else {
-        return tauriFetch(input, init)
-      }
+      if (input instanceof Request) return tauriFetch(input)
+      return tauriFetch(input, init)
     },
 
     getWslEnabled: async () => {
@@ -384,9 +383,7 @@ const createPlatform = (): Platform => {
 
     webviewZoom,
 
-    checkAppExists: async (appName: string) => {
-      return commands.checkAppExists(appName)
-    },
+    checkAppExists: async (appName: string) => commands.checkAppExists(appName),
 
     async readClipboardImage() {
       const image = await readImage().catch(() => null)
@@ -395,14 +392,17 @@ const createPlatform = (): Platform => {
       if (!bytes || bytes.length === 0) return null
       const size = await image.size().catch(() => null)
       if (!size) return null
+
       const canvas = document.createElement("canvas")
       canvas.width = size.width
       canvas.height = size.height
       const ctx = canvas.getContext("2d")
       if (!ctx) return null
+
       const imageData = ctx.createImageData(size.width, size.height)
       imageData.data.set(bytes)
       ctx.putImageData(imageData, 0, 0)
+
       return new Promise<File | null>((resolve) => {
         canvas.toBlob((blob) => {
           if (!blob) return resolve(null)
@@ -417,7 +417,7 @@ const createPlatform = (): Platform => {
   }
 }
 
-let menuTrigger = null as null | ((id: string) => void)
+let menuTrigger: null | ((id: string) => void) = null
 createMenu((id) => {
   menuTrigger?.(id)
 })
@@ -429,6 +429,7 @@ render(() => {
   const [defaultServer] = createResource(() =>
     platform.getDefaultServerUrl?.().then((url) => {
       if (url) return ServerConnection.key({ type: "http", http: { url } })
+      return undefined
     }),
   )
 
@@ -458,19 +459,12 @@ render(() => {
               password: data.password ?? undefined,
             }
             const server: ServerConnection.Any = data.is_sidecar
-              ? {
-                  displayName: "Local Server",
-                  type: "sidecar",
-                  variant: "base",
-                  http,
-                }
+              ? { displayName: "Local Server", type: "sidecar", variant: "base", http }
               : { type: "http", http }
 
             function Inner() {
               const cmd = useCommand()
-
               menuTrigger = (id) => cmd.trigger(id)
-
               return null
             }
 

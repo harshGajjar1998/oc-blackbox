@@ -10,7 +10,21 @@ use windows_sys::Win32::{
         HKEY_CURRENT_USER, HKEY_LOCAL_MACHINE, REG_EXPAND_SZ, REG_SZ, RRF_RT_REG_EXPAND_SZ,
         RRF_RT_REG_SZ, RegGetValueW,
     },
+    UI::Shell::SetCurrentProcessExplicitAppUserModelID,
 };
+
+pub fn set_current_process_app_id(app_id: &str) -> bool {
+    let app_id = app_id.trim();
+    if app_id.is_empty() {
+        return false;
+    }
+
+    let mut wide = app_id.encode_utf16().collect::<Vec<_>>();
+    wide.push(0);
+
+    let result = unsafe { SetCurrentProcessExplicitAppUserModelID(wide.as_ptr()) };
+    result >= 0
+}
 
 pub fn check_windows_app(app_name: &str) -> bool {
     resolve_windows_app_path(app_name).is_some()

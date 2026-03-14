@@ -30,6 +30,7 @@ packages/desktop/src-tauri/target/
 packages/desktop/src-tauri/target/**/*.exe
 packages/desktop/src-tauri/target/**/*.msi
 packages/desktop/src-tauri/target/**/*.zip
+packages/desktop/src-tauri/target/release/bundle/nsis/*.exe
 
 # Local dev files
 opencode-dev
