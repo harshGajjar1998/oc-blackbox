@@ -16,10 +16,11 @@ export async function createMenu(trigger: (id: string) => void) {
   const menu = await Menu.new({
     items: [
       await Submenu.new({
-        text: "OpenCode",
+        text: "Blackbox AI Dev",
         items: [
           await PredefinedMenuItem.new({
             item: { About: null },
+            text: "About Blackbox AI Dev",
           }),
           await MenuItem.new({
             enabled: UPDATER_ENABLED,
@@ -46,6 +47,7 @@ export async function createMenu(trigger: (id: string) => void) {
           }),
           await PredefinedMenuItem.new({
             item: "Hide",
+            text: "Hide Blackbox AI Dev",
           }),
           await PredefinedMenuItem.new({
             item: "HideOthers",
@@ -58,6 +60,7 @@ export async function createMenu(trigger: (id: string) => void) {
           }),
           await PredefinedMenuItem.new({
             item: "Quit",
+            text: "Quit Blackbox AI Dev",
           }),
         ].filter(Boolean),
       }),
