@@ -1,4 +1,4 @@
-# Rebrand TODO: OpenCode → Blackbox AI
+# Rebrand TODO: Blackbox → Blackbox AI
 
 ## Changes Required:
 

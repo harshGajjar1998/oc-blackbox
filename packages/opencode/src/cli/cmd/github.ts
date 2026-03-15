@@ -241,7 +241,7 @@ export const GithubInstallCommand = cmd({
                 "",
                 "    3. Go to a GitHub issue and comment `/oc summarize` to see the agent in action",
                 "",
-                "   Learn more about the GitHub agent - https://opencode.ai/docs/github/#usage-examples",
+                "   Learn more about the GitHub agent - https://blackbox.ai/docs/github/#usage-examples",
               ].join("\n"),
             )
           }

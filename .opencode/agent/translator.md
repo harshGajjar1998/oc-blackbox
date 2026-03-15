@@ -35,7 +35,7 @@ Locale guidance does not override code/command preservation rules or the global 
 
 ---
 
-# Do-Not-Translate Terms (OpenCode Docs)
+# Do-Not-Translate Terms (Blackbox Docs)
 
 Generated from: `packages/web/src/content/docs/*.mdx` (default English docs)
 Generated on: 2026-02-10
@@ -152,15 +152,15 @@ OAuth
 Ollama integration docs
 OpenAI's Data Policies
 OpenChamber
-OpenCode
-OpenCode config
-OpenCode Config
-OpenCode TUI with the opencode theme
-OpenCode Web - Active Session
-OpenCode Web - New Session
-OpenCode Web - See Servers
-OpenCode Zen
-OpenCode-Obsidian
+Blackbox
+Blackbox config
+Blackbox Config
+Blackbox TUI with the opencode theme
+Blackbox Web - Active Session
+Blackbox Web - New Session
+Blackbox Web - See Servers
+Blackbox Zen
+Blackbox-Obsidian
 OpenRouter dashboard
 OpenWork
 OVHcloud panel
@@ -301,7 +301,7 @@ NoeFabris
 OpenAI
 OpenAPI
 OpenChamber
-OpenCode
+Blackbox
 OpenRouter
 OpenTUI
 OpenWork
@@ -325,7 +325,7 @@ xAI
 ZenMux
 ```
 
-## OpenCode CLI commands (as shown in docs)
+## Blackbox CLI commands (as shown in docs)
 
 ```text
 opencode
@@ -816,11 +816,11 @@ http://localhost:4096
 http://localhost:4096/doc
 https://app.example.com
 https://AZURE_COGNITIVE_SERVICES_RESOURCE_NAME.cognitiveservices.azure.com/
-https://opencode.ai/zen/v1/chat/completions
-https://opencode.ai/zen/v1/messages
-https://opencode.ai/zen/v1/models/gemini-3-flash
-https://opencode.ai/zen/v1/models/gemini-3-pro
-https://opencode.ai/zen/v1/responses
+https://blackbox.ai/zen/v1/chat/completions
+https://blackbox.ai/zen/v1/messages
+https://blackbox.ai/zen/v1/models/gemini-3-flash
+https://blackbox.ai/zen/v1/models/gemini-3-pro
+https://blackbox.ai/zen/v1/responses
 https://RESOURCE_NAME.openai.azure.com/
 laravel/pint
 log/

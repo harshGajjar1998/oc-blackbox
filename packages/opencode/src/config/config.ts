@@ -70,7 +70,7 @@ export namespace Config {
   export const state = Instance.state(async () => {
     const auth = await Auth.all()
 
-    // Config loading order (low -> high precedence): https://opencode.ai/docs/config#precedence-order
+    // Config loading order (low -> high precedence): https://blackbox.ai/docs/config#precedence-order
     // 1) Remote .well-known/opencode (org defaults)
     // 2) Global config (~/.config/opencode/opencode.json{,c})
     // 3) Custom config (OPENCODE_CONFIG)
@@ -1046,7 +1046,7 @@ export namespace Config {
       command: z
         .record(z.string(), Command)
         .optional()
-        .describe("Command configuration, see https://opencode.ai/docs/commands"),
+        .describe("Command configuration, see https://blackbox.ai/docs/commands"),
       skills: Skills.optional().describe("Additional skill folder paths"),
       watcher: z
         .object({
@@ -1113,7 +1113,7 @@ export namespace Config {
         })
         .catchall(Agent)
         .optional()
-        .describe("Agent configuration, see https://opencode.ai/docs/agents"),
+        .describe("Agent configuration, see https://blackbox.ai/docs/agents"),
       provider: z
         .record(z.string(), Provider)
         .optional()

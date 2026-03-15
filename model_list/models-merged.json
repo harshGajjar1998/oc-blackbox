@@ -19587,7 +19587,7 @@
     "npm": "@ai-sdk/openai-compatible",
     "api": "https://opencode.ai/zen/v1",
     "name": "OpenCode Zen",
-    "doc": "https://opencode.ai/docs/zen",
+    "doc": "https://blackbox.ai/docs/zen",
     "models": {
       "gpt-5.3-codex": {
         "id": "gpt-5.3-codex",
@@ -59014,7 +59014,7 @@
     "npm": "@ai-sdk/openai-compatible",
     "api": "https://opencode.ai/zen/go/v1",
     "name": "OpenCode Go",
-    "doc": "https://opencode.ai/docs/zen",
+    "doc": "https://blackbox.ai/docs/zen",
     "models": {
       "glm-5": {
         "id": "glm-5",

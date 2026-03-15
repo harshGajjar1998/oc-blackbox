@@ -3,13 +3,13 @@
     <picture>
       <source srcset="packages/console/app/src/asset/logo-ornate-dark.svg" media="(prefers-color-scheme: dark)">
       <source srcset="packages/console/app/src/asset/logo-ornate-light.svg" media="(prefers-color-scheme: light)">
-      <img src="packages/console/app/src/asset/logo-ornate-light.svg" alt="OpenCode logo">
+      <img src="packages/console/app/src/asset/logo-ornate-light.svg" alt="Blackbox logo">
     </picture>
   </a>
 </p>
-<p align="center">OpenCode je open source AI agent za programiranje.</p>
+<p align="center">Blackbox je open source AI agent za programiranje.</p>
 <p align="center">
-  <a href="https://opencode.ai/discord"><img alt="Discord" src="https://img.shields.io/discord/1391832426048651334?style=flat-square&label=discord" /></a>
+  <a href="https://blackbox.ai/discord"><img alt="Discord" src="https://img.shields.io/discord/1391832426048651334?style=flat-square&label=discord" /></a>
   <a href="https://www.npmjs.com/package/opencode-ai"><img alt="npm" src="https://img.shields.io/npm/v/opencode-ai?style=flat-square" /></a>
   <a href="https://github.com/anomalyco/opencode/actions/workflows/publish.yml"><img alt="Build status" src="https://img.shields.io/github/actions/workflow/status/anomalyco/opencode/publish.yml?style=flat-square&branch=dev" /></a>
 </p>
@@ -37,7 +37,7 @@
   <a href="README.bn.md">বাংলা</a>
 </p>
 
-[![OpenCode Terminal UI](packages/web/src/assets/lander/screenshot.png)](https://opencode.ai)
+[![Blackbox Terminal UI](packages/web/src/assets/lander/screenshot.png)](https://opencode.ai)
 
 ---
 
@@ -45,7 +45,7 @@
 
 ```bash
 # YOLO
-curl -fsSL https://opencode.ai/install | bash
+curl -fsSL https://blackbox.ai/install | bash
 
 # Package manageri
 npm i -g opencode-ai@latest        # ili bun/pnpm/yarn
@@ -64,7 +64,7 @@ nix run nixpkgs#opencode           # ili github:anomalyco/opencode za najnoviji 
 
 ### Desktop aplikacija (BETA)
 
-OpenCode je dostupan i kao desktop aplikacija. Preuzmi je direktno sa [stranice izdanja](https://github.com/anomalyco/opencode/releases) ili sa [opencode.ai/download](https://opencode.ai/download).
+Blackbox je dostupan i kao desktop aplikacija. Preuzmi je direktno sa [stranice izdanja](https://github.com/anomalyco/opencode/releases) ili sa [opencode.ai/download](https://blackbox.ai/download).
 
 | Platforma             | Preuzimanje                           |
 | --------------------- | ------------------------------------- |
@@ -91,13 +91,13 @@ Instalacijska skripta koristi sljedeći redoslijed prioriteta za putanju instala
 
 ```bash
 # Primjeri
-OPENCODE_INSTALL_DIR=/usr/local/bin curl -fsSL https://opencode.ai/install | bash
-XDG_BIN_DIR=$HOME/.local/bin curl -fsSL https://opencode.ai/install | bash
+OPENCODE_INSTALL_DIR=/usr/local/bin curl -fsSL https://blackbox.ai/install | bash
+XDG_BIN_DIR=$HOME/.local/bin curl -fsSL https://blackbox.ai/install | bash
 ```
 
 ### Agenti
 
-OpenCode uključuje dva ugrađena agenta između kojih možeš prebacivati tasterom `Tab`.
+Blackbox uključuje dva ugrađena agenta između kojih možeš prebacivati tasterom `Tab`.
 
 - **build** - Podrazumijevani agent sa punim pristupom za razvoj
 - **plan** - Agent samo za čitanje za analizu i istraživanje koda
@@ -108,19 +108,19 @@ OpenCode uključuje dva ugrađena agenta između kojih možeš prebacivati taste
 Uključen je i **general** pod-agent za složene pretrage i višekoračne zadatke.
 Koristi se interno i može se pozvati pomoću `@general` u porukama.
 
-Saznaj više o [agentima](https://opencode.ai/docs/agents).
+Saznaj više o [agentima](https://blackbox.ai/docs/agents).
 
 ### Dokumentacija
 
-Za više informacija o konfiguraciji OpenCode-a, [**pogledaj dokumentaciju**](https://opencode.ai/docs).
+Za više informacija o konfiguraciji Blackbox-a, [**pogledaj dokumentaciju**](https://blackbox.ai/docs).
 
 ### Doprinosi
 
-Ako želiš doprinositi OpenCode-u, pročitaj [upute za doprinošenje](./CONTRIBUTING.md) prije slanja pull requesta.
+Ako želiš doprinositi Blackbox-u, pročitaj [upute za doprinošenje](./CONTRIBUTING.md) prije slanja pull requesta.
 
-### Gradnja na OpenCode-u
+### Gradnja na Blackbox-u
 
-Ako radiš na projektu koji je povezan s OpenCode-om i koristi "opencode" kao dio naziva, npr. "opencode-dashboard" ili "opencode-mobile", dodaj napomenu u svoj README da projekat nije napravio OpenCode tim i da nije povezan s nama.
+Ako radiš na projektu koji je povezan s Blackbox-om i koristi "opencode" kao dio naziva, npr. "opencode-dashboard" ili "opencode-mobile", dodaj napomenu u svoj README da projekat nije napravio Blackbox tim i da nije povezan s nama.
 
 ### FAQ
 
@@ -129,10 +129,10 @@ Ako radiš na projektu koji je povezan s OpenCode-om i koristi "opencode" kao di
 Po mogućnostima je vrlo sličan Claude Code-u. Ključne razlike su:
 
 - 100% open source
-- Nije vezan za jednog provajdera. Iako preporučujemo modele koje nudimo kroz [OpenCode Zen](https://opencode.ai/zen), OpenCode možeš koristiti s Claude, OpenAI, Google ili čak lokalnim modelima. Kako modeli napreduju, razlike među njima će se smanjivati, a cijene padati, zato je nezavisnost od provajdera važna.
+- Nije vezan za jednog provajdera. Iako preporučujemo modele koje nudimo kroz [Blackbox Zen](https://blackbox.ai/zen), Blackbox možeš koristiti s Claude, OpenAI, Google ili čak lokalnim modelima. Kako modeli napreduju, razlike među njima će se smanjivati, a cijene padati, zato je nezavisnost od provajdera važna.
 - LSP podrška odmah po instalaciji
-- Fokus na TUI. OpenCode grade neovim korisnici i kreatori [terminal.shop](https://terminal.shop); pomjeraćemo granice onoga što je moguće u terminalu.
-- Klijent/server arhitektura. To, recimo, omogućava da OpenCode radi na tvom računaru dok ga daljinski koristiš iz mobilne aplikacije, što znači da je TUI frontend samo jedan od mogućih klijenata.
+- Fokus na TUI. Blackbox grade neovim korisnici i kreatori [terminal.shop](https://terminal.shop); pomjeraćemo granice onoga što je moguće u terminalu.
+- Klijent/server arhitektura. To, recimo, omogućava da Blackbox radi na tvom računaru dok ga daljinski koristiš iz mobilne aplikacije, što znači da je TUI frontend samo jedan od mogućih klijenata.
 
 ---
 

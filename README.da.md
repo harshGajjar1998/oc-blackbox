@@ -3,13 +3,13 @@
     <picture>
       <source srcset="packages/console/app/src/asset/logo-ornate-dark.svg" media="(prefers-color-scheme: dark)">
       <source srcset="packages/console/app/src/asset/logo-ornate-light.svg" media="(prefers-color-scheme: light)">
-      <img src="packages/console/app/src/asset/logo-ornate-light.svg" alt="OpenCode logo">
+      <img src="packages/console/app/src/asset/logo-ornate-light.svg" alt="Blackbox logo">
     </picture>
   </a>
 </p>
 <p align="center">Den open source AI-kodeagent.</p>
 <p align="center">
-  <a href="https://opencode.ai/discord"><img alt="Discord" src="https://img.shields.io/discord/1391832426048651334?style=flat-square&label=discord" /></a>
+  <a href="https://blackbox.ai/discord"><img alt="Discord" src="https://img.shields.io/discord/1391832426048651334?style=flat-square&label=discord" /></a>
   <a href="https://www.npmjs.com/package/opencode-ai"><img alt="npm" src="https://img.shields.io/npm/v/opencode-ai?style=flat-square" /></a>
   <a href="https://github.com/anomalyco/opencode/actions/workflows/publish.yml"><img alt="Build status" src="https://img.shields.io/github/actions/workflow/status/anomalyco/opencode/publish.yml?style=flat-square&branch=dev" /></a>
 </p>
@@ -36,7 +36,7 @@
   <a href="README.bn.md">বাংলা</a>
 </p>
 
-[![OpenCode Terminal UI](packages/web/src/assets/lander/screenshot.png)](https://opencode.ai)
+[![Blackbox Terminal UI](packages/web/src/assets/lander/screenshot.png)](https://opencode.ai)
 
 ---
 
@@ -44,7 +44,7 @@
 
 ```bash
 # YOLO
-curl -fsSL https://opencode.ai/install | bash
+curl -fsSL https://blackbox.ai/install | bash
 
 # Pakkehåndteringer
 npm i -g opencode-ai@latest        # eller bun/pnpm/yarn
@@ -63,7 +63,7 @@ nix run nixpkgs#opencode           # eller github:anomalyco/opencode for nyeste 
 
 ### Desktop-app (BETA)
 
-OpenCode findes også som desktop-app. Download direkte fra [releases-siden](https://github.com/anomalyco/opencode/releases) eller [opencode.ai/download](https://opencode.ai/download).
+Blackbox findes også som desktop-app. Download direkte fra [releases-siden](https://github.com/anomalyco/opencode/releases) eller [opencode.ai/download](https://blackbox.ai/download).
 
 | Platform              | Download                              |
 | --------------------- | ------------------------------------- |
@@ -90,13 +90,13 @@ Installationsscriptet bruger følgende prioriteringsrækkefølge for installatio
 
 ```bash
 # Eksempler
-OPENCODE_INSTALL_DIR=/usr/local/bin curl -fsSL https://opencode.ai/install | bash
-XDG_BIN_DIR=$HOME/.local/bin curl -fsSL https://opencode.ai/install | bash
+OPENCODE_INSTALL_DIR=/usr/local/bin curl -fsSL https://blackbox.ai/install | bash
+XDG_BIN_DIR=$HOME/.local/bin curl -fsSL https://blackbox.ai/install | bash
 ```
 
 ### Agents
 
-OpenCode har to indbyggede agents, som du kan skifte mellem med `Tab`-tasten.
+Blackbox har to indbyggede agents, som du kan skifte mellem med `Tab`-tasten.
 
 - **build** - Standard, agent med fuld adgang til udviklingsarbejde
 - **plan** - Skrivebeskyttet agent til analyse og kodeudforskning
@@ -107,19 +107,19 @@ OpenCode har to indbyggede agents, som du kan skifte mellem med `Tab`-tasten.
 Derudover findes der en **general**-subagent til komplekse søgninger og flertrinsopgaver.
 Den bruges internt og kan kaldes via `@general` i beskeder.
 
-Læs mere om [agents](https://opencode.ai/docs/agents).
+Læs mere om [agents](https://blackbox.ai/docs/agents).
 
 ### Dokumentation
 
-For mere info om konfiguration af OpenCode, [**se vores docs**](https://opencode.ai/docs).
+For mere info om konfiguration af Blackbox, [**se vores docs**](https://blackbox.ai/docs).
 
 ### Bidrag
 
-Hvis du vil bidrage til OpenCode, så læs vores [contributing docs](./CONTRIBUTING.md) før du sender en pull request.
+Hvis du vil bidrage til Blackbox, så læs vores [contributing docs](./CONTRIBUTING.md) før du sender en pull request.
 
-### Bygget på OpenCode
+### Bygget på Blackbox
 
-Hvis du arbejder på et projekt der er relateret til OpenCode og bruger "opencode" som en del af navnet; f.eks. "opencode-dashboard" eller "opencode-mobile", så tilføj en note i din README, der tydeliggør at projektet ikke er bygget af OpenCode-teamet og ikke er tilknyttet os på nogen måde.
+Hvis du arbejder på et projekt der er relateret til Blackbox og bruger "opencode" som en del af navnet; f.eks. "opencode-dashboard" eller "opencode-mobile", så tilføj en note i din README, der tydeliggør at projektet ikke er bygget af Blackbox-teamet og ikke er tilknyttet os på nogen måde.
 
 ### FAQ
 
@@ -128,10 +128,10 @@ Hvis du arbejder på et projekt der er relateret til OpenCode og bruger "opencod
 Det minder meget om Claude Code i forhold til funktionalitet. Her er de vigtigste forskelle:
 
 - 100% open source
-- Ikke låst til en udbyder. Selvom vi anbefaler modellerne via [OpenCode Zen](https://opencode.ai/zen); kan OpenCode bruges med Claude, OpenAI, Google eller endda lokale modeller. Efterhånden som modeller udvikler sig vil forskellene mindskes og priserne falde, så det er vigtigt at være provider-agnostic.
+- Ikke låst til en udbyder. Selvom vi anbefaler modellerne via [Blackbox Zen](https://blackbox.ai/zen); kan Blackbox bruges med Claude, OpenAI, Google eller endda lokale modeller. Efterhånden som modeller udvikler sig vil forskellene mindskes og priserne falde, så det er vigtigt at være provider-agnostic.
 - LSP-support out of the box
-- Fokus på TUI. OpenCode er bygget af neovim-brugere og skaberne af [terminal.shop](https://terminal.shop); vi vil skubbe grænserne for hvad der er muligt i terminalen.
-- Klient/server-arkitektur. Det kan f.eks. lade OpenCode køre på din computer, mens du styrer den eksternt fra en mobilapp. Det betyder at TUI-frontend'en kun er en af de mulige clients.
+- Fokus på TUI. Blackbox er bygget af neovim-brugere og skaberne af [terminal.shop](https://terminal.shop); vi vil skubbe grænserne for hvad der er muligt i terminalen.
+- Klient/server-arkitektur. Det kan f.eks. lade Blackbox køre på din computer, mens du styrer den eksternt fra en mobilapp. Det betyder at TUI-frontend'en kun er en af de mulige clients.
 
 ---
 

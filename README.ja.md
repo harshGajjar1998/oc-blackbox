@@ -3,13 +3,13 @@
     <picture>
       <source srcset="packages/console/app/src/asset/logo-ornate-dark.svg" media="(prefers-color-scheme: dark)">
       <source srcset="packages/console/app/src/asset/logo-ornate-light.svg" media="(prefers-color-scheme: light)">
-      <img src="packages/console/app/src/asset/logo-ornate-light.svg" alt="OpenCode logo">
+      <img src="packages/console/app/src/asset/logo-ornate-light.svg" alt="Blackbox logo">
     </picture>
   </a>
 </p>
 <p align="center">オープンソースのAIコーディングエージェント。</p>
 <p align="center">
-  <a href="https://opencode.ai/discord"><img alt="Discord" src="https://img.shields.io/discord/1391832426048651334?style=flat-square&label=discord" /></a>
+  <a href="https://blackbox.ai/discord"><img alt="Discord" src="https://img.shields.io/discord/1391832426048651334?style=flat-square&label=discord" /></a>
   <a href="https://www.npmjs.com/package/opencode-ai"><img alt="npm" src="https://img.shields.io/npm/v/opencode-ai?style=flat-square" /></a>
   <a href="https://github.com/anomalyco/opencode/actions/workflows/publish.yml"><img alt="Build status" src="https://img.shields.io/github/actions/workflow/status/anomalyco/opencode/publish.yml?style=flat-square&branch=dev" /></a>
 </p>
@@ -36,7 +36,7 @@
   <a href="README.bn.md">বাংলা</a>
 </p>
 
-[![OpenCode Terminal UI](packages/web/src/assets/lander/screenshot.png)](https://opencode.ai)
+[![Blackbox Terminal UI](packages/web/src/assets/lander/screenshot.png)](https://opencode.ai)
 
 ---
 
@@ -44,7 +44,7 @@
 
 ```bash
 # YOLO
-curl -fsSL https://opencode.ai/install | bash
+curl -fsSL https://blackbox.ai/install | bash
 
 # パッケージマネージャー
 npm i -g opencode-ai@latest        # bun/pnpm/yarn でもOK
@@ -63,7 +63,7 @@ nix run nixpkgs#opencode           # または github:anomalyco/opencode で最�
 
 ### デスクトップアプリ (BETA)
 
-OpenCode はデスクトップアプリとしても利用できます。[releases page](https://github.com/anomalyco/opencode/releases) から直接ダウンロードするか、[opencode.ai/download](https://opencode.ai/download) を利用してください。
+Blackbox はデスクトップアプリとしても利用できます。[releases page](https://github.com/anomalyco/opencode/releases) から直接ダウンロードするか、[opencode.ai/download](https://blackbox.ai/download) を利用してください。
 
 | プラットフォーム      | ダウンロード                          |
 | --------------------- | ------------------------------------- |
@@ -90,13 +90,13 @@ scoop bucket add extras; scoop install extras/opencode-desktop
 
 ```bash
 # 例
-OPENCODE_INSTALL_DIR=/usr/local/bin curl -fsSL https://opencode.ai/install | bash
-XDG_BIN_DIR=$HOME/.local/bin curl -fsSL https://opencode.ai/install | bash
+OPENCODE_INSTALL_DIR=/usr/local/bin curl -fsSL https://blackbox.ai/install | bash
+XDG_BIN_DIR=$HOME/.local/bin curl -fsSL https://blackbox.ai/install | bash
 ```
 
 ### Agents
 
-OpenCode には組み込みの Agent が2つあり、`Tab` キーで切り替えられます。
+Blackbox には組み込みの Agent が2つあり、`Tab` キーで切り替えられます。
 
 - **build** - デフォルト。開発向けのフルアクセス Agent
 - **plan** - 分析とコード探索向けの読み取り専用 Agent
@@ -107,19 +107,19 @@ OpenCode には組み込みの Agent が2つあり、`Tab` キーで切り替え
 また、複雑な検索やマルチステップのタスク向けに **general** サブ Agent も含まれています。
 内部的に使用されており、メッセージで `@general` と入力して呼び出せます。
 
-[agents](https://opencode.ai/docs/agents) の詳細はこちら。
+[agents](https://blackbox.ai/docs/agents) の詳細はこちら。
 
 ### ドキュメント
 
-OpenCode の設定については [**ドキュメント**](https://opencode.ai/docs) を参照してください。
+Blackbox の設定については [**ドキュメント**](https://blackbox.ai/docs) を参照してください。
 
 ### コントリビュート
 
-OpenCode に貢献したい場合は、Pull Request を送る前に [contributing docs](./CONTRIBUTING.md) を読んでください。
+Blackbox に貢献したい場合は、Pull Request を送る前に [contributing docs](./CONTRIBUTING.md) を読んでください。
 
-### OpenCode の上に構築する
+### Blackbox の上に構築する
 
-OpenCode に関連するプロジェクトで、名前に "opencode"（例: "opencode-dashboard" や "opencode-mobile"）を含める場合は、そのプロジェクトが OpenCode チームによって作られたものではなく、いかなる形でも関係がないことを README に明記してください。
+Blackbox に関連するプロジェクトで、名前に "opencode"（例: "opencode-dashboard" や "opencode-mobile"）を含める場合は、そのプロジェクトが Blackbox チームによって作られたものではなく、いかなる形でも関係がないことを README に明記してください。
 
 ### FAQ
 
@@ -128,10 +128,10 @@ OpenCode に関連するプロジェクトで、名前に "opencode"（例: "ope
 機能面では Claude Code と非常に似ています。主な違いは次のとおりです。
 
 - 100% オープンソース
-- 特定のプロバイダーに依存しません。[OpenCode Zen](https://opencode.ai/zen) で提供しているモデルを推奨しますが、OpenCode は Claude、OpenAI、Google、またはローカルモデルでも利用できます。モデルが進化すると差は縮まり価格も下がるため、provider-agnostic であることが重要です。
+- 特定のプロバイダーに依存しません。[Blackbox Zen](https://blackbox.ai/zen) で提供しているモデルを推奨しますが、Blackbox は Claude、OpenAI、Google、またはローカルモデルでも利用できます。モデルが進化すると差は縮まり価格も下がるため、provider-agnostic であることが重要です。
 - そのまま使える LSP サポート
-- TUI にフォーカス。OpenCode は neovim ユーザーと [terminal.shop](https://terminal.shop) の制作者によって作られており、ターミナルで可能なことの限界を押し広げます。
-- クライアント/サーバー構成。例えば OpenCode をあなたのPCで動かし、モバイルアプリからリモート操作できます。TUI フロントエンドは複数あるクライアントの1つにすぎません。
+- TUI にフォーカス。Blackbox は neovim ユーザーと [terminal.shop](https://terminal.shop) の制作者によって作られており、ターミナルで可能なことの限界を押し広げます。
+- クライアント/サーバー構成。例えば Blackbox をあなたのPCで動かし、モバイルアプリからリモート操作できます。TUI フロントエンドは複数あるクライアントの1つにすぎません。
 
 ---
 
