@@ -1,5 +1,4 @@
-- [ ] Resolve merge conflict in `packages/desktop/index.html` using Dev-v2.0 title
-- [ ] Resolve merge conflict in `packages/desktop/src-tauri/tauri.conf.json` using Dev-v2.0 branding fields
-- [ ] Resolve merge conflict in `packages/desktop/src/index.tsx` using Dev-v2.0 notification logic
-- [ ] Stage resolved files and complete merge commit
-- [ ] Verify desktop app still runs on merged branch
+- [x] Add `github-dark` theme JSON in `packages/ui/src/theme/themes/github-dark.json`
+- [x] Register `github-dark` in `packages/ui/src/theme/default-themes.ts`
+- [x] Update settings e2e to assert selecting/storing `github-dark`
+- [x] Run targeted settings e2e test

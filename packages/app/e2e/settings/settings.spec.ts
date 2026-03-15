@@ -85,14 +85,9 @@ test("changing theme persists in localStorage", async ({ page, gotoSession }) =>
 
   await select.locator('[data-slot="select-select-trigger"]').click()
 
-  const items = page.locator('[data-slot="select-select-item"]')
-  const count = await items.count()
-  expect(count).toBeGreaterThan(1)
-
-  const firstTheme = await items.nth(1).locator('[data-slot="select-select-item-label"]').textContent()
-  expect(firstTheme).toBeTruthy()
-
-  await items.nth(1).click()
+  const githubDarkItem = page.locator('[data-slot="select-select-item"]').filter({ hasText: "GitHub Dark" })
+  await expect(githubDarkItem).toBeVisible()
+  await githubDarkItem.click()
 
   await page.keyboard.press("Escape")
 
@@ -100,13 +95,12 @@ test("changing theme persists in localStorage", async ({ page, gotoSession }) =>
     return localStorage.getItem("opencode-theme-id")
   })
 
-  expect(storedThemeId).not.toBeNull()
-  expect(storedThemeId).not.toBe("oc-1")
+  expect(storedThemeId).toBe("github-dark")
 
   const dataTheme = await page.evaluate(() => {
     return document.documentElement.getAttribute("data-theme")
   })
-  expect(dataTheme).toBe(storedThemeId)
+  expect(dataTheme).toBe("github-dark")
 })
 
 test("changing font persists in localStorage and updates CSS variable", async ({ page, gotoSession }) => {

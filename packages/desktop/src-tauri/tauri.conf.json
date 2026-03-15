@@ -33,7 +33,6 @@
     ],
     "active": true,
     "targets": ["deb", "rpm", "dmg", "nsis", "app"],
-    "externalBin": ["sidecars/opencode-cli"],
     "resources": ["../../../model_list/models-merged.json"],
     "linux": {
       "rpm": {
