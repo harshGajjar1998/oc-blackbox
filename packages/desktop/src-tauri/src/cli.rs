@@ -108,12 +108,51 @@ fn get_cli_install_path() -> Option<std::path::PathBuf> {
 }
 
 pub fn get_sidecar_path(app: &tauri::AppHandle) -> std::path::PathBuf {
-    // Get binary with symlinks support
-    tauri::process::current_binary(&app.env())
+    let bin_dir = tauri::process::current_binary(&app.env())
         .expect("Failed to get current binary")
         .parent()
         .expect("Failed to get parent dir")
-        .join("opencode-cli")
+        .to_path_buf();
+
+    #[cfg(windows)]
+    {
+        let cwd = std::env::current_dir().ok();
+        let mut candidates = vec![
+            bin_dir.join("opencode-cli.exe"),
+            bin_dir.join("opencode-cli"),
+            bin_dir.join("sidecars").join("opencode-cli-x86_64-pc-windows-msvc.exe"),
+            bin_dir.join("sidecars").join("opencode-cli.exe"),
+            bin_dir.join("sidecars").join("opencode-cli"),
+        ];
+
+        if let Some(cwd) = cwd {
+            candidates.push(
+                cwd.join("packages")
+                    .join("desktop")
+                    .join("src-tauri")
+                    .join("sidecars")
+                    .join("opencode-cli-x86_64-pc-windows-msvc.exe"),
+            );
+            candidates.push(
+                cwd.join("src-tauri")
+                    .join("sidecars")
+                    .join("opencode-cli-x86_64-pc-windows-msvc.exe"),
+            );
+            candidates.push(cwd.join("sidecars").join("opencode-cli-x86_64-pc-windows-msvc.exe"));
+        }
+
+        if let Some(found) = candidates.into_iter().find(|p| p.exists()) {
+            tracing::info!(path = %found.display(), "Resolved sidecar path");
+            return found;
+        }
+
+        return bin_dir.join("opencode-cli.exe");
+    }
+
+    #[cfg(not(windows))]
+    {
+        bin_dir.join("opencode-cli")
+    }
 }
 
 fn is_cli_installed() -> bool {

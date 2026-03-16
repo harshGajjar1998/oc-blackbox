@@ -1,4 +1,6 @@
-- [x] Add `github-dark` theme JSON in `packages/ui/src/theme/themes/github-dark.json`
-- [x] Register `github-dark` in `packages/ui/src/theme/default-themes.ts`
-- [x] Update settings e2e to assert selecting/storing `github-dark`
-- [x] Run targeted settings e2e test
+- [x] Patch `packages/script/src/index.ts` to handle missing git gracefully when resolving CHANNEL
+- [x] Verify OPENCODE_* env precedence remains unchanged
+- [x] Run `bun run dev:desktop` to confirm desktop app starts
+- [x] Update this TODO with completion status
+- [ ] Patch `packages/desktop/src-tauri/src/cli.rs` sidecar path resolution for Windows dev
+- [ ] Re-run desktop app and confirm sidecar spawn succeeds

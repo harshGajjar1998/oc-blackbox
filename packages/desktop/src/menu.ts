@@ -163,7 +163,7 @@ export async function createMenu(trigger: (id: string) => void) {
             text: "Blackbox Documentation",
           }),
           await MenuItem.new({
-            action: () => openUrl("https://discord.com/invite/blackbox"),
+            action: () => openUrl("https://product.blackbox.ai/support"),
             text: "Support Forum",
           }),
           await PredefinedMenuItem.new({
