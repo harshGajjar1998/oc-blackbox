@@ -138,10 +138,15 @@ async fn await_initialization(
         }
     };
 
-    future::join(state.status.clone(), events)
-        .await
-        .0
-        .map_err(|_| "Failed to get server status".to_string())?
+    let status = future::join(state.status.clone(), events).await.0;
+
+    match status {
+        Ok(Ok(data)) => Ok(data),
+        Ok(Err(err)) => Err(err),
+        Err(err) => Err(format!(
+            "Failed to get server status: initialization channel closed ({err})"
+        )),
+    }
 }
 
 #[tauri::command]
