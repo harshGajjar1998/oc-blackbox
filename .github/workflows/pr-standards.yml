@@ -29,7 +29,7 @@ jobs:
             // Check if author is a team member or bot
             if (login === 'opencode-agent[bot]') return;
             try {
-              const refsToTry = [pr.base.ref, 'main'];
+              const refsToTry = ['main', pr.base.ref];
               let members = [];
               for (const ref of [...new Set(refsToTry)]) {
                 try {
@@ -40,8 +40,11 @@ jobs:
                     ref
                   });
                   members = Buffer.from(file.content, 'base64').toString().split('\n').map(l => l.trim()).filter(Boolean);
+                  console.log(`Successfully fetched TEAM_MEMBERS from ref: ${ref}`);
                   break;
-                } catch (_) {}
+                } catch (e) {
+                  console.log(`Could not fetch TEAM_MEMBERS from ref ${ref}: ${e.message}`);
+                }
               }
               if (members.includes(login)) {
                 console.log(`Skipping: ${login} is a team member`);
@@ -187,7 +190,7 @@ jobs:
             // Check if author is a team member or bot
             if (login === 'opencode-agent[bot]') return;
             try {
-              const refsToTry = [pr.base.ref, 'main'];
+              const refsToTry = ['main', pr.base.ref];
               let members = [];
               for (const ref of [...new Set(refsToTry)]) {
                 try {
@@ -198,8 +201,11 @@ jobs:
                     ref
                   });
                   members = Buffer.from(file.content, 'base64').toString().split('\n').map(l => l.trim()).filter(Boolean);
+                  console.log(`Successfully fetched TEAM_MEMBERS from ref: ${ref}`);
                   break;
-                } catch (_) {}
+                } catch (e) {
+                  console.log(`Could not fetch TEAM_MEMBERS from ref ${ref}: ${e.message}`);
+                }
               }
               if (members.includes(login)) {
                 console.log(`Skipping: ${login} is a team member`);
