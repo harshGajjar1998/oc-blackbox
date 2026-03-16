@@ -33,7 +33,7 @@
     ],
     "active": true,
     "targets": ["deb", "rpm", "dmg", "nsis", "app"],
-    "resources": ["../../../model_list/models-merged.json"],
+"resources":["sidecars/*","../../../model_list/models-merged.json"],
     "linux": {
       "rpm": {
         "compression": {
