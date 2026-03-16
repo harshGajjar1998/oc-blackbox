@@ -137,6 +137,11 @@ export const dict = {
   "provider.connect.blackbox.visit.prefix": "Visit ",
   "provider.connect.blackbox.visit.link": "blackbox.ai",
   "provider.connect.blackbox.visit.suffix": " to collect your API key.",
+  "provider.connect.opencodeZen.line1": "OpenCode Zen gives you guided setup for provider access.",
+  "provider.connect.opencodeZen.line2": "Follow the OpenCode Zen instructions to continue connecting your provider.",
+  "provider.connect.opencodeZen.visit.prefix": "Visit ",
+  "provider.connect.opencodeZen.visit.link": "OpenCode Zen",
+  "provider.connect.opencodeZen.visit.suffix": " for setup details.",
   "provider.connect.oauth.code.visit.prefix": "Visit ",
   "provider.connect.oauth.code.visit.link": "this link",
   "provider.connect.oauth.code.visit.suffix":
