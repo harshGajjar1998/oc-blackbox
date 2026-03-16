@@ -29,7 +29,7 @@ jobs:
             // Check if author is a team member or bot
             if (login === 'opencode-agent[bot]') return;
             try {
-              const refsToTry = [pr.base.ref, 'main', 'dev'];
+              const refsToTry = [pr.base.ref, 'main'];
               let members = [];
               for (const ref of [...new Set(refsToTry)]) {
                 try {
@@ -187,7 +187,7 @@ jobs:
             // Check if author is a team member or bot
             if (login === 'opencode-agent[bot]') return;
             try {
-              const refsToTry = [pr.base.ref, 'main', 'dev'];
+              const refsToTry = [pr.base.ref, 'main'];
               let members = [];
               for (const ref of [...new Set(refsToTry)]) {
                 try {
