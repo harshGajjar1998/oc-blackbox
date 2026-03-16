@@ -1,6 +1,6 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "Blackbox Ai Desktop",
+  "productName": "Blackbox AI",
   "identifier": "ai.blackbox.desktop.dev",
   "mainBinaryName": "BlackboxAiDesktop",
   "version": "../package.json",
