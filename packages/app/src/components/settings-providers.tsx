@@ -5,19 +5,20 @@ import { Tag } from "@blackbox-ai/ui/tag"
 import { showToast } from "@blackbox-ai/ui/toast"
 import { iconNames, type IconName } from "@blackbox-ai/ui/icons/provider"
 import { popularProviders, useProviders } from "@/hooks/use-providers"
-import { createMemo, type Component, For, Show } from "solid-js"
+import { createMemo, createSignal, onCleanup, onMount, type Component, For, Show } from "solid-js"
 import { useLanguage } from "@/context/language"
 import { useGlobalSDK } from "@/context/global-sdk"
 import { useGlobalSync } from "@/context/global-sync"
 import { DialogConnectProvider } from "./dialog-connect-provider"
 import { DialogSelectProvider } from "./dialog-select-provider"
 import { DialogCustomProvider } from "./dialog-custom-provider"
+import blackboxLogoSmallBlack from "../../../../images/Logo-small-black.svg"
+import blackboxLogoSmallWhite from "../../../../images/Logo-small-white.svg"
 
 type ProviderSource = "env" | "api" | "config" | "custom"
 type ProviderItem = ReturnType<ReturnType<typeof useProviders>["connected"]>[number]
 
 const PROVIDER_NOTES = [
-  { match: (id: string) => id === "opencode", key: "dialog.provider.opencode.note" },
   { match: (id: string) => id === "anthropic", key: "dialog.provider.anthropic.note" },
   { match: (id: string) => id.startsWith("github-copilot"), key: "dialog.provider.copilot.note" },
   { match: (id: string) => id === "openai", key: "dialog.provider.openai.note" },
@@ -32,6 +33,33 @@ export const SettingsProviders: Component = () => {
   const globalSDK = useGlobalSDK()
   const globalSync = useGlobalSync()
   const providers = useProviders()
+  const [isDark, setIsDark] = createSignal(false)
+
+  onMount(() => {
+    const getIsDark = () => {
+      const scheme = document.documentElement.dataset.colorScheme
+      if (scheme === "dark") return true
+      if (scheme === "light") return false
+      return window.matchMedia("(prefers-color-scheme: dark)").matches
+    }
+
+    const update = () => setIsDark(getIsDark())
+    update()
+
+    const observer = new MutationObserver(update)
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ["data-color-scheme"],
+    })
+
+    const media = window.matchMedia("(prefers-color-scheme: dark)")
+    media.addEventListener("change", update)
+
+    onCleanup(() => {
+      observer.disconnect()
+      media.removeEventListener("change", update)
+    })
+  })
 
   const icon = (id: string): IconName => {
     if (iconNames.includes(id as IconName)) return id as IconName
@@ -74,7 +102,6 @@ export const SettingsProviders: Component = () => {
   }
 
   const canDisconnect = (item: ProviderItem) => source(item) !== "env"
-
   const note = (id: string) => PROVIDER_NOTES.find((item) => item.match(id))?.key
 
   const isConfigCustom = (providerID: string) => {
@@ -154,8 +181,17 @@ export const SettingsProviders: Component = () => {
                 {(item) => (
                   <div class="group flex flex-wrap items-center justify-between gap-4 min-h-16 py-3 border-b border-border-weak-base last:border-none">
                     <div class="flex items-center gap-3 min-w-0">
-                      <ProviderIcon id={icon(item.id)} class="size-5 shrink-0 icon-strong-base" />
-                      <span class="text-14-medium text-text-strong truncate">{item.name}</span>
+                      <Show
+                        when={item.id === "blackboxai"}
+                        fallback={<ProviderIcon id={icon(item.id)} class="size-5 shrink-0 icon-strong-base" />}
+                      >
+                        <img
+                          src={isDark() ? blackboxLogoSmallWhite : blackboxLogoSmallBlack}
+                          alt={item.name}
+                          class="size-5 shrink-0"
+                        />
+                      </Show>
+                      <span class="text-14-medium text-text-strong truncate">{item.id === "blackboxai" ? "BLACKBOXAI" : item.name}</span>
                       <Tag>{type(item)}</Tag>
                     </div>
                     <Show
@@ -185,8 +221,17 @@ export const SettingsProviders: Component = () => {
                 <div class="flex flex-wrap items-center justify-between gap-4 min-h-16 py-3 border-b border-border-weak-base last:border-none">
                   <div class="flex flex-col min-w-0">
                     <div class="flex items-center gap-x-3">
-                      <ProviderIcon id={icon(item.id)} class="size-5 shrink-0 icon-strong-base" />
-                      <span class="text-14-medium text-text-strong">{item.name}</span>
+                      <Show
+                        when={item.id === "blackboxai"}
+                        fallback={<ProviderIcon id={icon(item.id)} class="size-5 shrink-0 icon-strong-base" />}
+                      >
+                        <img
+                          src={isDark() ? blackboxLogoSmallWhite : blackboxLogoSmallBlack}
+                          alt={item.name}
+                          class="size-5 shrink-0"
+                        />
+                      </Show>
+                      <span class="text-14-medium text-text-strong">{item.id === "blackboxai" ? "BLACKBOXAI" : item.name}</span>
                       <Show when={item.id === "opencode"}>
                         <Tag>{language.t("dialog.provider.tag.recommended")}</Tag>
                       </Show>

@@ -5,10 +5,12 @@ import { Icon } from "@blackbox-ai/ui/icon"
 import { IconButton } from "@blackbox-ai/ui/icon-button"
 import { TextField } from "@blackbox-ai/ui/text-field"
 import type { IconName } from "@blackbox-ai/ui/icons/provider"
-import { type Component, For, Show } from "solid-js"
+import { type Component, For, Show, createSignal, onCleanup, onMount } from "solid-js"
 import { useLanguage } from "@/context/language"
 import { useModels } from "@/context/models"
 import { popularProviders } from "@/hooks/use-providers"
+import blackboxLogoSmallBlack from "../../../../images/Logo-small-black.svg"
+import blackboxLogoSmallWhite from "../../../../images/Logo-small-white.svg"
 
 type ModelItem = ReturnType<ReturnType<typeof useModels>["list"]>[number]
 
@@ -34,6 +36,33 @@ const ListEmptyState: Component<{ message: string; filter: string }> = (props) =
 export const SettingsModels: Component = () => {
   const language = useLanguage()
   const models = useModels()
+  const [isDark, setIsDark] = createSignal(false)
+
+  onMount(() => {
+    const getIsDark = () => {
+      const scheme = document.documentElement.dataset.colorScheme
+      if (scheme === "dark") return true
+      if (scheme === "light") return false
+      return window.matchMedia("(prefers-color-scheme: dark)").matches
+    }
+
+    const update = () => setIsDark(getIsDark())
+    update()
+
+    const observer = new MutationObserver(update)
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ["data-color-scheme"],
+    })
+
+    const media = window.matchMedia("(prefers-color-scheme: dark)")
+    media.addEventListener("change", update)
+
+    onCleanup(() => {
+      observer.disconnect()
+      media.removeEventListener("change", update)
+    })
+  })
 
   const list = useFilteredList<ModelItem>({
     items: (_filter) => models.list(),
@@ -98,8 +127,19 @@ export const SettingsModels: Component = () => {
               {(group) => (
                 <div class="flex flex-col gap-1">
                   <div class="flex items-center gap-2 pb-2">
-                    <ProviderIcon id={group.category as IconName} class="size-5 shrink-0 icon-strong-base" />
-                    <span class="text-14-medium text-text-strong">{group.items[0].provider.name}</span>
+                    <Show
+                      when={group.category === "blackboxai"}
+                      fallback={<ProviderIcon id={group.category as IconName} class="size-5 shrink-0 icon-strong-base" />}
+                    >
+                      <img
+                        src={isDark() ? blackboxLogoSmallWhite : blackboxLogoSmallBlack}
+                        alt={group.items[0].provider.name}
+                        class="size-5 shrink-0"
+                      />
+                    </Show>
+                    <span class="text-14-medium text-text-strong">
+                      {group.category === "blackboxai" ? "BLACKBOXAI" : group.items[0].provider.name}
+                    </span>
                   </div>
                   <div class="bg-surface-raised-base px-4 rounded-lg">
                     <For each={group.items}>

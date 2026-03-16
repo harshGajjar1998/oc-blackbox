@@ -44,7 +44,7 @@ const ModelList: Component<{
       current={local.model.current()}
       filterKeys={["provider.name", "name", "id"]}
       sortBy={(a, b) => a.name.localeCompare(b.name)}
-      groupBy={(x) => x.provider.name}
+      groupBy={(x) => (x.provider.id === "blackboxai" ? "BLACKBOXAI" : x.provider.name)}
       sortGroupsBy={(a, b) => {
         const aProvider = a.items[0].provider.id
         const bProvider = b.items[0].provider.id

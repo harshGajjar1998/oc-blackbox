@@ -1,4 +1,4 @@
-import { Component, Show } from "solid-js"
+import { Component, Show, createSignal, onCleanup, onMount } from "solid-js"
 import { useDialog } from "@blackbox-ai/ui/context/dialog"
 import { popularProviders, useProviders } from "@/hooks/use-providers"
 import { Dialog } from "@blackbox-ai/ui/dialog"
@@ -9,6 +9,8 @@ import { iconNames, type IconName } from "@blackbox-ai/ui/icons/provider"
 import { DialogConnectProvider } from "./dialog-connect-provider"
 import { useLanguage } from "@/context/language"
 import { DialogCustomProvider } from "./dialog-custom-provider"
+import blackboxLogoSmallBlack from "../../../../images/Logo-small-black.svg"
+import blackboxLogoSmallWhite from "../../../../images/Logo-small-white.svg"
 
 const CUSTOM_ID = "_custom"
 
@@ -21,6 +23,33 @@ export const DialogSelectProvider: Component = () => {
   const dialog = useDialog()
   const providers = useProviders()
   const language = useLanguage()
+  const [isDark, setIsDark] = createSignal(false)
+
+  onMount(() => {
+    const getIsDark = () => {
+      const scheme = document.documentElement.dataset.colorScheme
+      if (scheme === "dark") return true
+      if (scheme === "light") return false
+      return window.matchMedia("(prefers-color-scheme: dark)").matches
+    }
+
+    const update = () => setIsDark(getIsDark())
+    update()
+
+    const observer = new MutationObserver(update)
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ["data-color-scheme"],
+    })
+
+    const media = window.matchMedia("(prefers-color-scheme: dark)")
+    media.addEventListener("change", update)
+
+    onCleanup(() => {
+      observer.disconnect()
+      media.removeEventListener("change", update)
+    })
+  })
 
   const popularGroup = () => language.t("dialog.provider.group.popular")
   const otherGroup = () => language.t("dialog.provider.group.other")
@@ -68,8 +97,18 @@ export const DialogSelectProvider: Component = () => {
       >
         {(i) => (
           <div class="px-1.25 w-full flex items-center gap-x-3">
-            <ProviderIcon data-slot="list-item-extra-icon" id={icon(i.id)} />
-            <span>{i.name}</span>
+            <Show
+              when={i.id === "blackboxai"}
+              fallback={<ProviderIcon data-slot="list-item-extra-icon" id={icon(i.id)} />}
+            >
+              <img
+                src={isDark() ? blackboxLogoSmallWhite : blackboxLogoSmallBlack}
+                alt={i.name}
+                data-slot="list-item-extra-icon"
+                class="size-5 shrink-0 icon-strong-base"
+              />
+            </Show>
+            <span>{i.id === "blackboxai" ? "BLACKBOXAI" : i.name}</span>
             <Show when={i.id === CUSTOM_ID}>
               <Tag>{language.t("settings.providers.tag.custom")}</Tag>
             </Show>
