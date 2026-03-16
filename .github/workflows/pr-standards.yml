@@ -29,13 +29,20 @@ jobs:
             // Check if author is a team member or bot
             if (login === 'opencode-agent[bot]') return;
             try {
-              const { data: file } = await github.rest.repos.getContent({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                path: '.github/TEAM_MEMBERS',
-                ref: pr.base.ref
-              });
-              const members = Buffer.from(file.content, 'base64').toString().split('\n').map(l => l.trim()).filter(Boolean);
+              const refsToTry = [pr.base.ref, 'main', 'dev'];
+              let members = [];
+              for (const ref of [...new Set(refsToTry)]) {
+                try {
+                  const { data: file } = await github.rest.repos.getContent({
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    path: '.github/TEAM_MEMBERS',
+                    ref
+                  });
+                  members = Buffer.from(file.content, 'base64').toString().split('\n').map(l => l.trim()).filter(Boolean);
+                  break;
+                } catch (_) {}
+              }
               if (members.includes(login)) {
                 console.log(`Skipping: ${login} is a team member`);
                 return;
@@ -180,13 +187,20 @@ jobs:
             // Check if author is a team member or bot
             if (login === 'opencode-agent[bot]') return;
             try {
-              const { data: file } = await github.rest.repos.getContent({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                path: '.github/TEAM_MEMBERS',
-                ref: pr.base.ref
-              });
-              const members = Buffer.from(file.content, 'base64').toString().split('\n').map(l => l.trim()).filter(Boolean);
+              const refsToTry = [pr.base.ref, 'main', 'dev'];
+              let members = [];
+              for (const ref of [...new Set(refsToTry)]) {
+                try {
+                  const { data: file } = await github.rest.repos.getContent({
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    path: '.github/TEAM_MEMBERS',
+                    ref
+                  });
+                  members = Buffer.from(file.content, 'base64').toString().split('\n').map(l => l.trim()).filter(Boolean);
+                  break;
+                } catch (_) {}
+              }
               if (members.includes(login)) {
                 console.log(`Skipping: ${login} is a team member`);
                 return;
