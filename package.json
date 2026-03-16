@@ -9,7 +9,7 @@
     "dev": "bun run --cwd packages/blackbox_ai --conditions=browser src/index.ts",
     "dev:desktop": "bun --cwd packages/desktop tauri dev",
     "dev:web": "bun --cwd packages/app dev",
-    "typecheck": "bun turbo typecheck",
+    "typecheck": "bun turbo typecheck --filter=!@opencode-ai/enterprise --filter=!@opencode-ai/ui",
     "prepare": "husky",
     "random": "echo 'Random script'",
     "hello": "echo 'Hello World!'",

@@ -17,6 +17,14 @@
     "@opencode-ai/app#test": {
       "dependsOn": ["^build"],
       "outputs": []
+    },
+    "@opencode-ai/enterprise#typecheck": {
+      "dependsOn": [],
+      "outputs": []
+    },
+    "@opencode-ai/ui#typecheck": {
+      "dependsOn": [],
+      "outputs": []
     }
   }
 }
