@@ -605,11 +605,11 @@ export const dict = {
   "settings.general.section.display": "Display",
 
   "settings.general.row.language.title": "Language",
-  "settings.general.row.language.description": "Change the display language for OpenCode",
+  "settings.general.row.language.description": "Change the display language for Blackbox AI",
   "settings.general.row.appearance.title": "Appearance",
-  "settings.general.row.appearance.description": "Customise how OpenCode looks on your device",
+  "settings.general.row.appearance.description": "Customise how Blackbox AI looks on your device",
   "settings.general.row.theme.title": "Theme",
-  "settings.general.row.theme.description": "Customise how OpenCode is themed.",
+  "settings.general.row.theme.description": "Customise how Blackbox AI is themed.",
   "settings.general.row.font.title": "Font",
   "settings.general.row.font.description": "Customise the mono font used in code blocks",
   "settings.general.row.reasoningSummaries.title": "Show reasoning summaries",
@@ -630,7 +630,7 @@ export const dict = {
   "settings.general.row.releaseNotes.description": "Show What's New popups after updates",
 
   "settings.updates.row.startup.title": "Check for updates on startup",
-  "settings.updates.row.startup.description": "Automatically check for updates when OpenCode launches",
+  "settings.updates.row.startup.description": "Automatically check for updates when Blackbox AI launches",
   "settings.updates.row.check.title": "Check for updates",
   "settings.updates.row.check.description": "Manually check for updates and install if available",
   "settings.updates.action.checkNow": "Check now",
