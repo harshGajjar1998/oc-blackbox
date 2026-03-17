@@ -159,11 +159,11 @@ export async function createMenu(trigger: (id: string) => void) {
         items: [
           // missing native macos search
           await MenuItem.new({
-            action: () => openUrl("https://opencode.ai/docs"),
-            text: "OpenCode Documentation",
+            action: () => openUrl("https://www.blackbox.ai/"),
+            text: "Blackbox AI Documentation",
           }),
           await MenuItem.new({
-            action: () => openUrl("https://discord.com/invite/opencode"),
+            action: () => openUrl("https://www.blackbox.ai/"),
             text: "Support Forum",
           }),
           await PredefinedMenuItem.new({
@@ -176,11 +176,11 @@ export async function createMenu(trigger: (id: string) => void) {
             item: "Separator",
           }),
           await MenuItem.new({
-            action: () => openUrl("https://github.com/anomalyco/opencode/issues/new?template=feature_request.yml"),
+            action: () => openUrl("https://www.blackbox.ai/"),
             text: "Share Feedback",
           }),
           await MenuItem.new({
-            action: () => openUrl("https://github.com/anomalyco/opencode/issues/new?template=bug_report.yml"),
+            action: () => openUrl("https://www.blackbox.ai/"),
             text: "Report a Bug",
           }),
         ],
