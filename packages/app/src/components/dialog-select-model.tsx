@@ -10,8 +10,7 @@ import { Tag } from "@blackbox-ai/ui/tag"
 import { Dialog } from "@blackbox-ai/ui/dialog"
 import { List } from "@blackbox-ai/ui/list"
 import { Tooltip } from "@blackbox-ai/ui/tooltip"
-import { DialogSelectProvider } from "./dialog-select-provider"
-import { DialogManageModels } from "./dialog-manage-models"
+import { DialogSettings } from "./dialog-settings"
 import { ModelTooltip } from "./model-tooltip"
 import { useLanguage } from "@/context/language"
 
@@ -103,12 +102,12 @@ export function ModelSelectorPopover(props: {
 
   const handleManage = () => {
     setStore("open", false)
-    dialog.show(() => <DialogManageModels />)
+    dialog.show(() => <DialogSettings defaultValue="models" />)
   }
 
   const handleConnectProvider = () => {
     setStore("open", false)
-    dialog.show(() => <DialogSelectProvider />)
+    dialog.show(() => <DialogSettings defaultValue="providers" />)
   }
   const language = useLanguage()
 
@@ -196,7 +195,7 @@ export const DialogSelectModel: Component<{ provider?: string }> = (props) => {
           class="h-7 -my-1 text-14-medium"
           icon="plus-small"
           tabIndex={-1}
-          onClick={() => dialog.show(() => <DialogSelectProvider />)}
+          onClick={() => dialog.show(() => <DialogSettings defaultValue="providers" />)}
         >
           {language.t("command.provider.connect")}
         </Button>
@@ -206,7 +205,7 @@ export const DialogSelectModel: Component<{ provider?: string }> = (props) => {
       <Button
         variant="ghost"
         class="ml-3 mt-5 mb-6 text-text-base self-start"
-        onClick={() => dialog.show(() => <DialogManageModels />)}
+        onClick={() => dialog.show(() => <DialogSettings defaultValue="models" />)}
       >
         {language.t("dialog.model.manage")}
       </Button>
