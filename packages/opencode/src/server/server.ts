@@ -1,6 +1,7 @@
 import { BusEvent } from "@/bus/bus-event"
 import { Bus } from "@/bus"
 import { Log } from "../util/log"
+import os from "os"
 import { describeRoute, generateSpecs, validator, resolver, openAPIRouteHandler } from "hono-openapi"
 import { Hono } from "hono"
 import { cors } from "hono/cors"
@@ -194,7 +195,7 @@ export namespace Server {
         )
         .use(async (c, next) => {
           if (c.req.path === "/log") return next()
-          const raw = c.req.query("directory") || c.req.header("x-opencode-directory") || process.cwd()
+          const raw = c.req.query("directory") || c.req.header("x-opencode-directory") || (() => { try { return process.cwd() } catch { return os.homedir() } })()
           const directory = (() => {
             try {
               return decodeURIComponent(raw)
