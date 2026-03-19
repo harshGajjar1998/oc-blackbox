@@ -1,3 +1,4 @@
+import { homeDir } from "@tauri-apps/api/path"
 import { message } from "@tauri-apps/plugin-dialog"
 import { Command } from "@tauri-apps/plugin-shell"
 
@@ -13,7 +14,9 @@ export async function installCli(): Promise<void> {
     ])
 
     await command.execute()
-    await message(t("desktop.cli.installed.message", { path: "blackbox" }), { title: t("desktop.cli.installed.title") })
+    const home = await homeDir()
+    const installPath = `${home}/.local/bin/blackbox`
+    await message(t("desktop.cli.installed.message", { path: installPath }), { title: t("desktop.cli.installed.title") })
   } catch (e) {
     await message(t("desktop.cli.failed.message", { error: String(e) }), { title: t("desktop.cli.failed.title") })
   }

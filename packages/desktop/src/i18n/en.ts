@@ -20,8 +20,8 @@ export const dict = {
   "desktop.updater.installFailed.title": "Update Failed",
   "desktop.updater.installFailed.message": "Failed to install update",
 
-  "desktop.cli.installed.title": "CLI Installed",
-  "desktop.cli.installed.message": "CLI installed to {{path}}\n\nRestart your terminal to use the 'blackbox' command.",
+  "desktop.cli.installed.title": "Blackbox CLI Installed",
+  "desktop.cli.installed.message": "Blackbox CLI installed to {{path}}\n\nRestart your terminal to use the 'blackbox' command.",
   "desktop.cli.failed.title": "Installation Failed",
   "desktop.cli.failed.message": "Failed to install CLI: {{error}}",
 }
