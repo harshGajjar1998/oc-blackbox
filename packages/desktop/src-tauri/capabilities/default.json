@@ -36,6 +36,16 @@
     "core:window:allow-toggle-maximize",
     "decorum:allow-show-snap-overlay",
     "shell:default",
+    {
+      "identifier": "shell:allow-execute",
+      "allow": [
+        {
+          "name": "install-blackbox-cli",
+          "cmd": "bash",
+          "args": true
+        }
+      ]
+    },
     "updater:default",
     "dialog:default",
     "process:default",

@@ -438,6 +438,14 @@ pub fn spawn_command(
     cmd.stdout(Stdio::piped());
     cmd.stderr(Stdio::piped());
     cmd.stdin(Stdio::null());
+    // Set a valid working directory so process.cwd() never throws EPERM.
+    // Use the real user home dir (always exists), not the app-managed home_dir which may not exist yet.
+    if let Ok(real_home) = std::env::var("HOME") {
+        let real_home_path = std::path::PathBuf::from(&real_home);
+        if real_home_path.exists() {
+            cmd.current_dir(real_home_path);
+        }
+    }
 
     let mut wrap = CommandWrap::from(cmd);
 
