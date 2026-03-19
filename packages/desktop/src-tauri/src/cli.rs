@@ -215,6 +215,7 @@ pub fn sync_cli(app: tauri::AppHandle) -> Result<(), String> {
     Ok(())
 }
 
+#[allow(dead_code)]
 fn get_user_shell() -> String {
     std::env::var("SHELL").unwrap_or_else(|_| "/bin/sh".to_string())
 }
@@ -405,16 +406,27 @@ pub fn spawn_command(
         }
     } else {
         let sidecar = get_sidecar_path(app);
-        let shell = get_user_shell();
 
-        let line = if shell.ends_with("/nu") {
-            format!("^\"{}\" {}", sidecar.display(), args)
-        } else {
-            format!("\"{}\" {}", sidecar.display(), args)
-        };
+        // Invoke the sidecar directly instead of via a login shell.
+        // Using a login shell (-l) causes the app to hang on machines where the
+        // user's shell profile (.zshrc, .bash_profile, etc.) blocks or errors
+        // during initialisation (e.g. slow nvm/pyenv/brew hooks, missing tools).
+        let mut cmd = Command::new(&sidecar);
+        cmd.args(args.split_whitespace());
 
-        let mut cmd = Command::new(shell);
-        cmd.args(["-l", "-c", &line]);
+        // Inherit PATH from the current process so the sidecar can find tools it
+        // needs, and ensure the sidecar's own directory is also on PATH.
+        let mut path = std::env::var("PATH").unwrap_or_default();
+        if let Some(sidecar_dir) = sidecar.parent() {
+            let sidecar_dir_str = sidecar_dir.to_string_lossy();
+            if !path.split(':').any(|p| p == sidecar_dir_str.as_ref()) {
+                if !path.is_empty() {
+                    path.push(':');
+                }
+                path.push_str(&sidecar_dir_str);
+            }
+        }
+        cmd.env("PATH", path);
 
         for (key, value) in envs {
             cmd.env(key, value);
