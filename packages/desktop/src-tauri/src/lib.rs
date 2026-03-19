@@ -17,7 +17,6 @@ use futures::{
     future::{self, Shared},
 };
 use std::{
-    env,
     net::TcpListener,
     path::PathBuf,
     process::Command,
@@ -428,10 +427,10 @@ async fn initialize(app: AppHandle) {
     // come from any invocation of the sidecar CLI. The progress is captured by a stdout stream interceptor.
     // Then in the loading task, we wait for sqlite migration to complete before
     // starting our health check against the server, otherwise long migrations could result in a timeout.
-    let needs_sqlite_migration = !sqlite_file_exists();
+    let needs_sqlite_migration = !sqlite_file_exists(&app);
     let sqlite_done = needs_sqlite_migration.then(|| {
         tracing::info!(
-            path = %opencode_db_path().expect("failed to get db path").display(),
+            path = %opencode_db_path(&app).unwrap_or_default().display(),
             "Sqlite file not found, waiting for it to be generated"
         );
 
@@ -547,8 +546,6 @@ async fn initialize(app: AppHandle) {
         Some(loading_window)
     } else {
         tracing::debug!("Showing main window without loading window");
-        MainWindow::create(&app).expect("Failed to create main window");
-
         None
     };
 
@@ -559,10 +556,13 @@ async fn initialize(app: AppHandle) {
 
     if loading_window.is_some() {
         loading_window_complete.await;
-
         tracing::info!("Loading window completed");
     }
 
+    // Always create (or focus) the main window after initialization is complete.
+    // This ensures the main window is shown regardless of whether a loading window
+    // was displayed, and prevents stale window-state (e.g. a previously saved
+    // /loading URL) from leaving the user stuck on the splash screen.
     MainWindow::create(&app).expect("Failed to create main window");
 
     if let Some(loading_window) = loading_window {
@@ -653,26 +653,20 @@ fn get_sidecar_port() -> u32 {
         }) as u32
 }
 
-fn sqlite_file_exists() -> bool {
-    let Ok(path) = opencode_db_path() else {
-        return true;
-    };
-
-    path.exists()
+fn sqlite_file_exists(app: &AppHandle) -> bool {
+    opencode_db_path(app).map(|p| p.exists()).unwrap_or(true)
 }
 
-fn opencode_db_path() -> Result<PathBuf, &'static str> {
-    let xdg_data_home = env::var_os("XDG_DATA_HOME").filter(|v| !v.is_empty());
-
-    let data_home = match xdg_data_home {
-        Some(v) => PathBuf::from(v),
-        None => {
-            let home = dirs::home_dir().ok_or("cannot determine home directory")?;
-            home.join(".local").join("share")
-        }
-    };
-
-    Ok(data_home.join("opencode").join("opencode.db"))
+fn opencode_db_path(app: &AppHandle) -> Result<PathBuf, String> {
+    // The sidecar is launched with XDG_DATA_HOME set to the app's local data
+    // directory (see spawn_command in cli.rs). We must check the same path here
+    // so that sqlite_file_exists() reflects what the sidecar will actually see.
+    let state_dir = app
+        .path()
+        .resolve("", tauri::path::BaseDirectory::AppLocalData)
+        .map_err(|e| format!("failed to resolve AppLocalData: {e}"))?;
+    let xdg_data_home = state_dir.join("blackbox-ai");
+    Ok(xdg_data_home.join("opencode").join("opencode.db"))
 }
 
 // Creates a `once` listener for the specified event and returns a future that resolves
