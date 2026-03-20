@@ -126,12 +126,12 @@ export const dict = {
   "provider.connect.status.waiting": "Waiting for authorization...",
   "provider.connect.status.failed": "Authorization failed: {{error}}",
   "provider.connect.apiKey.description":
-    "Enter your {{provider}} API key to connect your account and use {{provider}} models in OpenCode.",
+    "Enter your {{provider}} API key to connect your account and use {{provider}} models in Blackbox AI.",
   "provider.connect.apiKey.label": "{{provider}} API key",
   "provider.connect.apiKey.placeholder": "API key",
   "provider.connect.apiKey.required": "API key is required",
   "provider.connect.opencodeZen.line1":
-    "OpenCode Zen gives you access to a curated set of reliable optimized models for coding agents.",
+    "Blackbox AI Zen gives you access to a curated set of reliable optimized models for coding agents.",
   "provider.connect.opencodeZen.line2":
     "With a single API key you'll get access to models such as Claude, GPT, Gemini, GLM and more.",
   "provider.connect.opencodeZen.visit.prefix": "Visit ",
@@ -140,7 +140,7 @@ export const dict = {
   "provider.connect.oauth.code.visit.prefix": "Visit ",
   "provider.connect.oauth.code.visit.link": "this link",
   "provider.connect.oauth.code.visit.suffix":
-    " to collect your authorization code to connect your account and use {{provider}} models in OpenCode.",
+    " to collect your authorization code to connect your account and use {{provider}} models in Blackbox AI.",
   "provider.connect.oauth.code.label": "{{method}} authorization code",
   "provider.connect.oauth.code.placeholder": "Authorization code",
   "provider.connect.oauth.code.required": "Authorization code is required",
@@ -148,7 +148,7 @@ export const dict = {
   "provider.connect.oauth.auto.visit.prefix": "Visit ",
   "provider.connect.oauth.auto.visit.link": "this link",
   "provider.connect.oauth.auto.visit.suffix":
-    " and enter the code below to connect your account and use {{provider}} models in OpenCode.",
+    " and enter the code below to connect your account and use {{provider}} models in Blackbox AI.",
   "provider.connect.oauth.auto.confirmationCode": "Confirmation code",
   "provider.connect.toast.connected.title": "{{provider}} connected",
   "provider.connect.toast.connected.description": "{{provider}} models are now available to use.",
@@ -304,7 +304,7 @@ export const dict = {
   "dialog.directory.empty": "No folders found",
 
   "dialog.server.title": "Servers",
-  "dialog.server.description": "Switch which OpenCode server this app connects to.",
+  "dialog.server.description": "Switch which Blackbox AI server this app connects to.",
   "dialog.server.search.placeholder": "Search servers",
   "dialog.server.empty": "No servers yet",
   "dialog.server.add.title": "Add a server",
@@ -430,7 +430,7 @@ export const dict = {
   "toast.session.listFailed.title": "Failed to load sessions for {{project}}",
 
   "toast.update.title": "Update available",
-  "toast.update.description": "A new version of OpenCode ({{version}}) is now available to install.",
+  "toast.update.description": "A new version of Blackbox AI ({{version}}) is now available to install.",
   "toast.update.action.installRestart": "Install and restart",
   "toast.update.action.notYet": "Not yet",
 
@@ -441,7 +441,7 @@ export const dict = {
   "error.page.action.checking": "Checking...",
   "error.page.action.checkUpdates": "Check for updates",
   "error.page.action.updateTo": "Update to {{version}}",
-  "error.page.report.prefix": "Please report this error to the OpenCode team",
+  "error.page.report.prefix": "Please report this error to the Blackbox AI team",
   "error.page.report.discord": "on Discord",
   "error.page.version": "Version: {{version}}",
 
@@ -460,7 +460,7 @@ export const dict = {
   "error.chain.didYouMean": "Did you mean: {{suggestions}}",
   "error.chain.modelNotFound": "Model not found: {{provider}}/{{model}}",
   "error.chain.checkConfig": "Check your config (opencode.json) provider/model names",
-  "error.chain.mcpFailed": 'MCP server "{{name}}" failed. Note, OpenCode does not support MCP authentication yet.',
+  "error.chain.mcpFailed": 'MCP server "{{name}}" failed. Note, Blackbox AI does not support MCP authentication yet.',
   "error.chain.providerAuthFailed": "Provider authentication failed ({{provider}}): {{message}}",
   "error.chain.providerInitFailed":
     'Failed to initialize provider "{{provider}}". Check credentials and configuration.',
@@ -587,7 +587,7 @@ export const dict = {
   "sidebar.project.viewAllSessions": "View all sessions",
   "sidebar.project.clearNotifications": "Clear notifications",
 
-  "app.name.desktop": "OpenCode Desktop",
+  "app.name.desktop": "Blackbox AI Desktop",
 
   "settings.section.desktop": "Desktop",
   "settings.section.server": "Server",
@@ -595,7 +595,7 @@ export const dict = {
   "settings.tab.shortcuts": "Shortcuts",
   "settings.desktop.section.wsl": "WSL",
   "settings.desktop.wsl.title": "WSL integration",
-  "settings.desktop.wsl.description": "Run the OpenCode server inside WSL on Windows.",
+  "settings.desktop.wsl.description": "Run the Blackbox AI server inside WSL on Windows.",
 
   "settings.general.section.appearance": "Appearance",
   "settings.general.section.notifications": "System notifications",
@@ -636,7 +636,7 @@ export const dict = {
   "settings.updates.action.checkNow": "Check now",
   "settings.updates.action.checking": "Checking...",
   "settings.updates.toast.latest.title": "You're up to date",
-  "settings.updates.toast.latest.description": "You're running the latest version of OpenCode.",
+  "settings.updates.toast.latest.description": "You're running the latest version of Blackbox AI.",
   "font.option.ibmPlexMono": "IBM Plex Mono",
   "font.option.cascadiaCode": "Cascadia Code",
   "font.option.firaCode": "Fira Code",
